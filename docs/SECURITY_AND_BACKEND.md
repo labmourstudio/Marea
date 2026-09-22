@@ -1,14 +1,14 @@
 # Marea production architecture
 
-The current repository is an interactive frontend prototype. The following controls must be implemented in the production API before real user data is accepted.
+The repository uses Supabase Auth, Postgres Row Level Security and Storage policies as its application backend. The initial schema and authorization rules live in `supabase/migrations`. The controls below describe both the implemented database boundary and the account-level controls that must be configured before accepting production data.
 
 ## Authentication and authorization
 
 - Use email verification plus OAuth, passkeys or TOTP MFA for privileged accounts.
-- Store sessions in secure, HTTP-only, same-site cookies. Rotate sessions after authentication and privilege changes.
+- Supabase manages and refreshes browser sessions. Review the chosen Supabase Auth storage model and session lifetime against the production threat model.
 - Keep admin sessions shorter than standard user sessions and require recent re-authentication for critical changes.
 - Resolve the authenticated account and its restrictions for every request.
-- Enforce role and permission checks in server middleware and service methods. Hiding navigation is never authorization.
+- Enforce role and permission checks in Postgres RLS and privileged database functions. Hiding navigation is never authorization.
 - Return `401` for unauthenticated access and `403` for authenticated accounts without permission.
 - Use least-privilege roles such as `owner`, `admin`, `moderator`, `course_reviewer` and `member`.
 
@@ -30,24 +30,24 @@ Example server-side decision order:
 - Search and feed queries must filter by visibility at the database query level, not after records are returned.
 - Media should use private object storage and short-lived signed URLs where access is restricted.
 
-## Suggested domain model
+## Implemented domain model
 
-- accounts, profiles, sessions, roles, permissions
-- follows, friendships, notifications, conversations
-- posts, post_media, comments, reactions, saves
-- worlds, world_members, characters, locations, factions, items, events, timelines, relations, notes
-- projects, project_members, project_needs, project_assets
-- courses, chapters, lessons, exercises, course_reviews
-- reports, moderation_actions, audit_events, appearance_versions
+- Supabase `auth.users`, profiles and platform roles
+- follows, friendships and notifications
+- posts, comments and reactions
+- worlds, world members, characters, locations, factions, items and world events
+- projects and project members
+- courses and lessons
+- reports, site settings and audit logs
 
-Every user-owned entity should include `owner_id`, `visibility`, timestamps and a version field. Public publishing should copy only explicitly selected material into a showcase projection so private notes cannot leak through nested API responses.
+User-owned entities include an owner/user reference, visibility where applicable and timestamps. Public queries only return explicitly published public/showcase records. Additional version history and a dedicated showcase projection are recommended before collaborative editing becomes generally available.
 
 ## Admin controls
 
-- Serve Admin from a separately protected route group or origin.
+- Admin is served from a separately protected route group and all privileged mutations are checked again in database RPCs.
 - Require MFA/passkey enrollment for privileged roles.
 - Add rate limits, IP/device anomaly alerts and step-up authentication for destructive or brand-wide changes.
-- Make platform-theme changes versioned and reversible.
+- Platform-theme changes are allowlisted and audited. Add a version/rollback table before delegating appearance access beyond trusted administrators.
 - Record actor, action, target, before/after summary, timestamp and request identifier for every privileged mutation.
 - Encrypt backups, test restores and separate backup credentials from application credentials.
 
