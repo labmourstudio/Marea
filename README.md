@@ -2,6 +2,8 @@
 
 Marea is a bilingual Vietnamese–English creative social network concept for writers, artists, game designers and worldbuilders.
 
+Live website: https://labmourstudio.github.io/Marea/
+
 ## Run locally
 
 ```bash
