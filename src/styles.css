@@ -430,6 +430,8 @@ html[data-theme="dark"] .site-header .main-nav a.active svg { background:linear-
 .feed-main { min-width:0; }
 .post-copy,.post-stats b { color:var(--ink); }
 html[data-theme="dark"] .secondary-button:hover,html[data-theme="dark"] .social-button:hover { background:rgba(56,73,127,.95); color:var(--ink); }
+html[data-theme="dark"] .apple-logo,html[data-theme="dark"] .demo-banner .secondary-button { color:var(--ink); }
+.config-notice p { color:var(--muted); }
 .profile-project-heading { margin:32px 0 18px; padding:0 3px; }
 .profile-project-heading h2 { line-height:1.35; }
 .profile-layout { margin-top:0; align-items:stretch; }
