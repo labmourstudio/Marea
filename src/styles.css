@@ -238,6 +238,7 @@ a { color: inherit; }
   body.printing-project .presentation-slide h2 { font: 700 30pt Georgia,serif; }
   body.printing-project .presentation-slide p { font: 18pt/1.45 Arial,sans-serif; white-space: pre-wrap; }
   body.printing-project .presentation-slide img { max-height: 85mm; max-width: 100%; object-fit: contain; }
+  body.printing-project .presentation-slide:last-child { page-break-after: auto; break-after: auto; }
 }
 .main-nav a { height:45px; border:0; background:transparent; border-radius:13px; display:flex; align-items:center; gap:12px; padding:0 13px; color:#616479; cursor:pointer; font-size:12px; font-weight:650; transition:.18s; text-decoration:none; }
 .main-nav a:hover { background:rgba(118,104,237,.06); color:var(--purple-dark); }

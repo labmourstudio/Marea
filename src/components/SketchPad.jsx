@@ -7,6 +7,7 @@ export default function SketchPad({ initialImage, onSave, disabled = false }) {
   useEffect(() => {
     if (!initialImage) return
     const image = new Image()
+    image.crossOrigin = 'anonymous'
     image.onload = () => canvas.current?.getContext('2d').drawImage(image, 0, 0, 960, 540)
     image.src = initialImage
   }, [initialImage])

@@ -356,7 +356,7 @@ export function ProjectStudioPage() {
     setPublishing(true); setError('')
     try {
       const previous = draft.public_snapshot
-      const { error: hideError } = await supabase.from('projects').update({ status: 'draft', visibility: 'private', public_snapshot: {}, published_at: null }).eq('id', projectId)
+      const { error: hideError } = await supabase.from('projects').update({ status: 'draft', visibility: 'private', public_snapshot: {}, cover_path: null, published_at: null }).eq('id', projectId)
       if (hideError) throw hideError
       update({ status: 'draft', visibility: 'private', public_snapshot: {} })
       await removePublicAssets(previous)
@@ -414,10 +414,11 @@ export function ProjectStudioPage() {
       const nodeIds = new Set(nodes.map((node) => node.id))
       const links = draft.links.filter((edge) => nodeIds.has(edge.source_id) && nodeIds.has(edge.target_id)).map(({ source_id, target_id, canvas_kind, label, detail }) => ({ source_id, target_id, canvas_kind, label, detail }))
       const snapshot = { sections, events, nodes, links }
-      const { error: publishError } = await supabase.from('projects').update({ public_snapshot: snapshot, status: 'published', visibility: 'showcase', published_at: new Date().toISOString(), contact_open: draft.contact_open, allow_copy: draft.allow_copy, allow_export: draft.allow_export }).eq('id', projectId)
+      const cover_path = sections.find((section) => section.content?.image_path)?.content.image_path || nodes.find((node) => node.image_path)?.image_path || null
+      const { error: publishError } = await supabase.from('projects').update({ public_snapshot: snapshot, cover_path, status: 'published', visibility: 'showcase', published_at: new Date().toISOString(), contact_open: draft.contact_open, allow_copy: draft.allow_copy, allow_export: draft.allow_export }).eq('id', projectId)
       if (publishError) throw publishError
       const previous = draft.public_snapshot
-      update({ status: 'published', visibility: 'showcase', public_snapshot: snapshot })
+      update({ status: 'published', visibility: 'showcase', public_snapshot: snapshot, cover_path })
       try { await removePublicAssets(previous) }
       catch (cleanupError) { setError(`Bản mới đã công khai nhưng chưa xóa được ảnh của bản cũ: ${cleanupError.message}`) }
       setSaveStatus('Đã công khai bản nội dung được chọn')
