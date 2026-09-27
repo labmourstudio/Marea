@@ -22,7 +22,7 @@ npm run build
 
 Workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) triển khai khi `main` được cập nhật. Hai repository Actions secrets `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` cần chứa giá trị của dự án Supabase đang dùng. Base path được lấy từ tên repository GitHub, hiện là `/Mora/`. `404.html` xử lý truy cập trực tiếp đường dẫn trong ứng dụng.
 
-**Việc đổi tên repository đã xảy ra trước khi xác nhận cài đặt Auth.** Trong Supabase **Authentication → URL Configuration**, cần thêm `https://labmourstudio.github.io/Mora/**` vào Redirect URLs, đặt Site URL thành `https://labmourstudio.github.io/Mora/`, và giữ redirect `/Marea/**` trong giai đoạn chuyển tiếp. Kiểm tra đăng ký qua email, đăng nhập và đặt lại mật khẩu trên đường dẫn mới. Mã nguồn không thể tự thay đổi cài đặt Auth của tài khoản Supabase.
+**Việc đổi tên repository đã xảy ra trước khi xác nhận cài đặt Auth.** Trong Supabase **Authentication → URL Configuration**, cần thêm `https://labmourstudio.github.io/Mora/**` vào Redirect URLs và đặt Site URL thành `https://labmourstudio.github.io/Mora/`. Đã kiểm tra: đường dẫn Pages cũ `/Marea/login` trả về 404, nên các liên kết email cũ không tự chuyển tiếp chỉ nhờ giữ URL cũ trong danh sách Supabase; cần gửi lại email xác minh/đặt lại mật khẩu trên URL mới, hoặc triển khai redirect cũ riêng nếu muốn hỗ trợ chúng. Kiểm tra đăng ký qua email, đăng nhập và đặt lại mật khẩu trên đường dẫn mới. Mã nguồn không thể tự thay đổi cài đặt Auth của tài khoản Supabase.
 
 ## Quyền và giới hạn
 

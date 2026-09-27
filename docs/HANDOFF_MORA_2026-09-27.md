@@ -4,8 +4,8 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 
 ## Nguồn và địa chỉ
 
-- Repository đã được đổi tên trong lúc phát triển: `https://github.com/labmourstudio/Mora`, nhánh `main` triển khai qua `.github/workflows/deploy-pages.yml` tới `https://labmourstudio.github.io/Mora/`. Bản build mới phải dùng base `/Mora/`; HTML build cũ ở đường dẫn mới có thể vẫn trỏ tới `/Marea/assets/` và hiện trang trống.
-- **Cần hoàn tất cài đặt Auth:** thêm `https://labmourstudio.github.io/Mora/**` trong Supabase Authentication → URL Configuration → Redirect URLs, đổi Site URL thành `https://labmourstudio.github.io/Mora/` và giữ `/Marea/**` để không ngắt các email cũ. Chưa có quyền kiểm tra hoặc xác nhận các cài đặt này trên Supabase.
+- Repository đã được đổi tên trong lúc phát triển: `https://github.com/labmourstudio/Mora`, nhánh `main` triển khai qua `.github/workflows/deploy-pages.yml` tới `https://labmourstudio.github.io/Mora/`. Đã kiểm tra `/Mora/login`: trang tải JS tại `/Mora/assets/` và hiện màn hình chọn ngôn ngữ/đăng nhập. Đường dẫn Pages cũ `/Marea/login` trả về **404**.
+- **Cần hoàn tất cài đặt Auth:** thêm `https://labmourstudio.github.io/Mora/**` trong Supabase Authentication → URL Configuration → Redirect URLs, đổi Site URL thành `https://labmourstudio.github.io/Mora/`. Chưa có quyền kiểm tra hoặc xác nhận các cài đặt này trên Supabase. Email cũ trỏ đến `/Marea/` không tự chuyển vì Pages cũ trả 404; người dùng cần xin lại link trên địa chỉ mới hoặc chủ repo triển khai redirect riêng.
 - Vercel có `vercel.json` nhưng trang đang phục vụ qua **GitHub Pages**. Không tự nhận đã chuyển hosting.
 - PR dự thảo [#2](https://github.com/labmourstudio/Mora/pull/2) chuẩn bị không gian dự án cộng tác trên Supabase; nhánh đã đồng bộ Feed mới nhưng **chưa merge** vì migration, quyền dữ liệu và luồng 2 tài khoản chưa được xác minh.
 
@@ -48,7 +48,7 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 2. Để bật poll/audio/video, áp dụng `202609270001_mora_social_posts.sql` qua quyền quản trị Supabase (SQL Editor) trên dự án hiện tại. Kiểm tra lỗi migration; sau đó làm mới schema cache nếu cần. Không đưa service-role key vào mã client hoặc GitHub.
 3. Kiểm tra với **hai tài khoản thật**: người A đăng ảnh, video, audio và poll; người B xem, bình chọn, bình luận, gắn bài với dự án công khai A; A xem bài tại `/projects/{id}/activity`. Kiểm tra dự án riêng tư không có trong selector hoặc hoạt động công khai, bình chọn không được vote vào phương án của bài khác, file chỉ ghi dưới đường dẫn UID của người đăng.
 4. Xác minh UI trên desktop/tablet/mobile, sáng/tối, reload thẳng các tuyến khi dùng GitHub Pages. Không tự công bố bài demo. Giữ PR #2 là draft cho đến khi test migration cộng tác độc lập.
-5. Repo đã mang tên Mora; không coi việc đổi tên repo là hoàn tất chuyển địa chỉ đăng nhập. Giữ `/Marea/` trong danh sách URL được phép cho các liên kết email cũ nếu chúng còn hiệu lực.
+5. Repo đã mang tên Mora; không coi việc đổi tên repo là hoàn tất chuyển địa chỉ đăng nhập. Nếu muốn hỗ trợ liên kết email cũ `/Marea/`, phải có nơi phục vụ redirect riêng; chỉ giữ URL trong cấu hình Auth không sửa được lỗi 404 của Pages.
 
 ## Ưu tiên tiếp theo
 
