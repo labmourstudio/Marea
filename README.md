@@ -1,10 +1,17 @@
 # Mora · Create & Connect
 
-Mora là mạng xã hội sáng tạo của **Mour Studio**. Website tiếp tục dùng tài khoản, dữ liệu và repository `labmourstudio/Marea` đang hoạt động. Địa chỉ hiện tại là [labmourstudio.github.io/Marea](https://labmourstudio.github.io/Marea/); tên repository trong URL sẽ chỉ đổi sau khi cấu hình Supabase Auth cho địa chỉ mới.
+Mora là mạng xã hội sáng tạo của **Mour Studio**. Bản này tiếp tục ứng dụng Marea hiện có; không xóa người dùng hay dữ liệu thật và không chèn nội dung mẫu vào sản phẩm.
 
-Giao diện Mora dùng chữ có nét cổ điển và ngôi sao bốn cánh, với các mục Feed, Friends, Worlds, Projects, Learn, Profile, Studio và Admin. Feed chỉ lưu bài đăng; tạo dự án trong Studio không tự công khai bài đăng hoặc dự án. Bản đang triển khai chưa có không gian dự án mở rộng; tính năng này nằm trên nhánh phát triển và cần migration Supabase trước khi phát hành. Website không chèn người dùng, bài viết, dự án hoặc số liệu giả.
+## Phần tiếp tục sử dụng và phần xây thêm
 
-## Chạy ứng dụng
+| Có sẵn từ Marea | Bổ sung cho Mora |
+| --- | --- |
+| React, Vite, GitHub Pages, Supabase Auth và RLS | Nhận diện chữ Mora và ngôi sao bốn cánh |
+| Feed, Friends, Worlds, Learn, Profile, Studio, Admin | Feed dùng bucket ảnh/video riêng, không tự tạo project |
+| Bảng `projects`, `project_members` và quyền sở hữu | Bản giới thiệu công khai tách khỏi không gian dự án riêng |
+| Tài khoản, khóa học, nội dung và quyền truy cập hiện có | Bản nháp trong IndexedDB, canvas, sự kiện, lời mời và trình bày PDF |
+
+## Cài đặt và phát triển
 
 ```bash
 npm ci
@@ -14,19 +21,36 @@ npm run lint
 npm run build
 ```
 
-Điền `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` từ Supabase vào `.env.local`. Chỉ dùng publishable/anon key, không đưa service-role key vào trình duyệt hoặc GitHub. Nếu bắt đầu với database mới, chạy [`supabase/migrations/202609220001_initial_marea.sql`](supabase/migrations/202609220001_initial_marea.sql). Dự án Supabase cũ đã có schema này thì giữ nguyên dữ liệu.
+Điền `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` từ Supabase. Chỉ dùng **publishable/anon key**; không đưa service-role key vào Vite, GitHub hoặc trình duyệt. Không có biến môi trường, ứng dụng hiển thị thông báo cấu hình thay vì giả lập đăng nhập hoặc dữ liệu.
 
-## Đưa bản hiện tại lên GitHub Pages
+## Cơ sở dữ liệu
 
-Workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) triển khai khi `main` được cập nhật. Hai repository Actions secrets `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` cần chứa giá trị của dự án Supabase đang dùng. Base path được lấy từ tên repository GitHub, hiện là `/Marea/`. `404.html` xử lý truy cập trực tiếp đường dẫn trong ứng dụng.
+1. Dự án mới: áp dụng `supabase/migrations/202609220001_initial_marea.sql`, sau đó `supabase/migrations/202609260001_mora_project_space.sql` trong SQL Editor của Supabase. Dự án Marea đang chạy chỉ cần migration thứ hai.
+2. Migration thứ hai giữ nguyên bảng cũ, thêm bảng nội bộ `project_sections`, `project_canvas_nodes`, `project_canvas_links`, `project_events`, lời mời, lời nhắn, bucket ảnh dự án riêng tư và bucket Feed công khai.
+3. `project_showcases` là view chỉ trả về các trường công khai được chọn. Bảng `projects` chứa trường nội bộ; RLS chỉ cho chủ dự án, thành viên và nhân sự được phép đọc nguyên hàng. Canvas và ảnh dự án riêng tư chỉ cho thành viên được cấp quyền xem; người chỉnh sửa có thể ghi. Chỉ chủ dự án được công bố snapshot.
+4. Chạy migration trước khi triển khai giao diện Mora. Nếu chưa áp dụng, các trang dự án Mora sẽ báo thiếu bảng/view.
 
-Giữ `https://labmourstudio.github.io/Marea/**` trong Supabase **Authentication → URL Configuration** cho đến khi đổi URL. Để chuyển URL sang `/Mora/`, trước hết thêm `https://labmourstudio.github.io/Mora/**` vào Redirect URLs; sau đó đổi tên repository, kiểm tra Pages và đặt Site URL mới. Giữ redirect cũ trong giai đoạn chuyển tiếp để các email xác minh trước đó tiếp tục hoạt động. Đổi tên thương hiệu hiển thị không đòi hỏi đổi repository ngay.
+## Đăng nhập và địa chỉ web
 
-## Quyền và giới hạn
+Site dùng miễn phí GitHub Pages ở `https://labmourstudio.github.io/Mora/` **sau khi repository được đổi tên thành `Mora` và workflow triển khai thành công**. Trước khi đổi tên, trong Supabase **Authentication → URL Configuration**:
 
-- Supabase Auth, Postgres RLS và Storage kiểm tra quyền đối với dữ liệu. Nội dung riêng tư không xuất hiện trên Feed hay danh sách Projects công khai.
-- Mục Admin chỉ điều hướng cho vai trò được phép; RPC tại database kiểm tra lại các thao tác quản trị. GitHub Pages là hosting tĩnh, nên trang từ chối của client không phải HTTP 403 từ server.
-- Giao diện hiện tại không đồng nghĩa với việc đã có MFA bắt buộc, phiên Admin ngắn hoặc cơ chế sao lưu. Xem [docs/SECURITY_AND_BACKEND.md](docs/SECURITY_AND_BACKEND.md).
-- Dịch vụ GitHub Pages và các gói Supabase miễn phí có hạn mức theo nhà cung cấp; kiểm tra hạn mức tài khoản khi vận hành. Không có tính năng thu phí trong ứng dụng.
+- Thêm Redirect URL `https://labmourstudio.github.io/Mora/**`.
+- Đổi Site URL thành `https://labmourstudio.github.io/Mora/` sau khi Mora đã hoạt động.
+- Giữ Redirect URL `/Marea/**` trong giai đoạn chuyển tiếp để các email cũ tiếp tục mở được.
 
-Trước khi giới thiệu thương hiệu Mora rộng rãi, kiểm tra quyền sử dụng tên, tên miền và tài khoản mạng xã hội.
+Workflow `.github/workflows/deploy-pages.yml` dùng `GITHUB_REPOSITORY` để đặt base path đúng với tên repo. Trong GitHub Actions, giữ hai secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Đường dẫn sâu được hỗ trợ bằng `404.html` cho SPA. Không cần Vercel, dịch vụ trả phí, domain riêng hoặc dữ liệu giả để chạy bản này.
+
+## Quy trình dự án
+
+- Feed chỉ tạo bài đăng. Dự án được tạo tại `/studio/projects` với hai lựa chọn: chỉ trên thiết bị hoặc riêng tư trên Supabase.
+- Bản chỉ trên thiết bị dùng IndexedDB, tự lưu, có xuất và nhập bản sao lưu JSON. Xóa dữ liệu trình duyệt có thể làm mất bản không sao lưu. Muốn mời người khác, chủ dự án xác nhận tải toàn bộ bản nháp lên Supabase trước.
+- Dự án cloud có mục nội dung linh hoạt, canvas nhân vật/vùng đất, ảnh riêng tư, sự kiện/phác thảo. Chủ dự án tạo liên kết mời một lần cho người xem hoặc người chỉnh sửa, hết hạn sau bảy ngày.
+- Khi công bố, chủ dự án đánh dấu từng mục sẽ đưa vào snapshot công khai. Ảnh được chọn mới sao chép sang bucket công khai. Người xem liên hệ qua lời nhắn trong Mora: hợp tác, trao đổi chuyên môn hoặc đề nghị đầu tư; không có giao dịch đầu tư.
+- Chọn nội dung rồi dùng **In / lưu PDF 16:9** để mở hộp thoại in của trình duyệt và chọn **Save as PDF**. Bản xuất chứa mô tả, ảnh và liên kết của các mục đã chọn.
+
+## Giới hạn và vận hành
+
+- Quyền xem, chỉnh sửa và tải ảnh riêng tư được kiểm tra bằng RLS/Storage. Tùy chọn hạn chế sao chép hay xuất trên giao diện không thể ngăn người đã xem lưu tài nguyên hoặc chụp màn hình.
+- Bản nháp chỉ trên thiết bị không được mã hóa riêng; bảo vệ thiết bị và file JSON sao lưu như tài liệu riêng tư. File JSON có thể chứa ảnh dưới dạng dữ liệu nhúng.
+- Kiểm tra nhãn hiệu, tên miền và tài khoản mạng xã hội **Mora** trước khi công bố thương mại. Việc đổi tên repository không xác lập quyền đối với tên thương hiệu.
+- Quản trị cần MFA/passkey, xác minh lại thay đổi quan trọng, vòng đời phiên và chính sách sao lưu tại Supabase trước khi vận hành rộng. Xem `docs/SECURITY_AND_BACKEND.md`.

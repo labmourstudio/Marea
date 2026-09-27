@@ -1,10 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { ArrowLeft, BookOpen, Gamepad2, Globe2 } from 'lucide-react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
 import LanguageToggle from '../components/LanguageToggle'
 import { useAuth } from '../context/AuthContext'
 import { supabase } from '../lib/supabase'
+import { pendingInvite, rememberInvite } from '../lib/pendingInvite'
 
 export default function AuthPage() {
   const { configured, session, profile, loading } = useAuth()
@@ -16,7 +17,10 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
-  const afterLogin = '/feed'
+  const location = useLocation()
+  const fromInvite = location.state?.from?.pathname
+  useEffect(() => { if (fromInvite) rememberInvite(fromInvite) }, [fromInvite])
+  const afterLogin = (fromInvite?.startsWith('/invite/') ? fromInvite : pendingInvite()) || '/feed'
 
   if (!loading && session) return <Navigate to={profile?.onboarding_completed ? afterLogin : '/onboarding'} replace />
 
