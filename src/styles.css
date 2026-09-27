@@ -388,3 +388,9 @@ html[data-theme="dark"] .demo-vote button,html[data-theme="dark"] .demo-perspect
 html[data-theme="dark"] .demo-hero-link { color:#e6edff; background:rgba(92,102,166,.5); }
 @media(max-width:850px) { .demo-roles { grid-template-columns:1fr; }.demo-outro { align-items:flex-start; flex-direction:column; } }
 @media(max-width:640px) { .new-composer { padding:13px; }.composer-context { grid-template-columns:1fr; }.demo-banner,.demo-posts article { padding:19px; }.demo-course { flex-direction:column; }.post-comments form,.demo-comment form { flex-wrap:wrap; } }
+.language-welcome-panel.glass-card { overflow-x:hidden; background:linear-gradient(150deg,rgba(251,252,255,.96),rgba(236,241,255,.94)); border-color:rgba(255,255,255,.95); box-shadow:0 28px 90px rgba(5,15,56,.33); }
+.language-welcome-panel.glass-card::after { display:none; }
+html[data-theme="dark"] .language-welcome-panel.glass-card { background:linear-gradient(150deg,rgba(24,37,79,.97),rgba(29,31,67,.96)); border-color:rgba(177,195,255,.24); }
+.auth-header .brand,.auth-header .brand-star { color:white; fill:white; }
+.auth-panel.glass-card { background:linear-gradient(150deg,rgba(255,255,255,.89),rgba(242,245,255,.81)); }
+html[data-theme="dark"] .auth-panel.glass-card { background:linear-gradient(150deg,rgba(24,40,87,.94),rgba(24,28,67,.87)); }
