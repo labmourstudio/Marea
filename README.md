@@ -1,119 +1,56 @@
-# Marea
+# Mayo · Create & Connect
 
-**Marea — Where ideas become worlds.**
+Mayo là mạng xã hội sáng tạo của **Mour Studio**. Bản này tiếp tục ứng dụng Marea hiện có; không xóa người dùng hay dữ liệu thật và không chèn nội dung mẫu vào sản phẩm.
 
-**Marea — Nơi ý tưởng trở thành thế giới.**
+## Phần tiếp tục sử dụng và phần xây thêm
 
-Marea is a Vietnamese–English creative network for writers, worldbuilders, artists, game designers and learners. This repository contains the production-oriented React application backed by Supabase and designed for Vercel.
+| Có sẵn từ Marea | Bổ sung cho Mayo |
+| --- | --- |
+| React, Vite, GitHub Pages, Supabase Auth và RLS | Nhận diện chữ Mayo và ngôi sao bốn cánh |
+| Feed, Friends, Worlds, Learn, Profile, Studio, Admin | Feed dùng bucket ảnh/video riêng, không tự tạo project |
+| Bảng `projects`, `project_members` và quyền sở hữu | Bản giới thiệu công khai tách khỏi không gian dự án riêng |
+| Tài khoản, khóa học, nội dung và quyền truy cập hiện có | Bản nháp trong IndexedDB, canvas, sự kiện, lời mời và trình bày PDF |
 
-The application contains no seeded users, posts, projects, courses or platform statistics. A new database starts empty.
-
-## Stack
-
-- Vite + React
-- React Router
-- Supabase Auth, Postgres and Storage
-- Row Level Security (RLS) and database-checked Admin RPCs
-- Vercel SPA hosting
-
-## 1. Create and configure Supabase
-
-1. Create a Supabase project.
-2. Open **SQL Editor** and run [`supabase/migrations/202609220001_initial_marea.sql`](supabase/migrations/202609220001_initial_marea.sql). Alternatively, link the Supabase CLI and run `supabase db push`.
-3. In **Authentication → URL Configuration**, set:
-   - Site URL: your production Vercel URL, for example `https://marea.example`.
-   - Redirect URLs: `http://localhost:5173/**`, your Vercel preview pattern, and your production URL with `/**`.
-4. Keep email/password enabled. Configure SMTP before production email verification and password recovery.
-5. Google and Apple buttons remain hidden unless their providers are configured in Supabase and the corresponding environment flags are enabled.
-
-The migration creates these Storage buckets with file-size and MIME restrictions:
-
-- `avatars`
-- `covers`
-- `world-media`
-- `project-media`
-- `course-media`
-- `site-assets`
-
-Storage policies require uploads to use the path `user_id/file`. `world-media` is private. Public profile and published-content assets use public buckets.
-
-## 2. Environment variables
-
-Copy `.env.example` to `.env.local`:
+## Cài đặt và phát triển
 
 ```bash
+npm ci
 cp .env.example .env.local
-```
-
-Fill in values from **Supabase → Project Settings → API**:
-
-```env
-VITE_SUPABASE_URL=https://YOUR_PROJECT_REF.supabase.co
-VITE_SUPABASE_ANON_KEY=YOUR_SUPABASE_PUBLISHABLE_OR_ANON_KEY
-VITE_ENABLE_GOOGLE_OAUTH=false
-VITE_ENABLE_APPLE_OAUTH=false
-```
-
-Only use the browser-safe publishable/anon key. **Never expose the Supabase service-role key in Vite, GitHub, or the browser.** RLS is still required even with the publishable key.
-
-## 3. First Owner account
-
-1. Register normally through Marea and verify the email.
-2. Complete onboarding once.
-3. In the Supabase SQL Editor, run the following after replacing the email:
-
-```sql
-update public.profiles
-set platform_role = 'owner'
-where id = (select id from auth.users where email = 'owner@example.com');
-```
-
-Do this only once for the initial trusted Owner. Later role changes must go through Marea Admin and are written to `audit_logs`.
-
-Owner/Admin accounts should enable MFA or passkeys in Supabase before production launch. Authentication assurance and short Admin sessions should also be enforced at the Supabase/Auth gateway level; hiding the Admin navigation is never treated as authorization.
-
-## 4. Local development
-
-```bash
-npm install
 npm run dev
-```
-
-Verification:
-
-```bash
 npm run lint
 npm run build
-npm run preview
 ```
 
-Without the two required Supabase variables, Marea intentionally shows a configuration notice instead of fake content or a simulated login.
+Điền `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` từ Supabase. Chỉ dùng **publishable/anon key**; không đưa service-role key vào Vite, GitHub hoặc trình duyệt. Không có biến môi trường, ứng dụng hiển thị thông báo cấu hình thay vì giả lập đăng nhập hoặc dữ liệu.
 
-## 5. Deploy to Vercel
+## Cơ sở dữ liệu
 
-1. Import `labmourstudio/Marea` into Vercel.
-2. Use the Vite preset. The standard build command is `npm run build` and output directory is `dist`.
-3. Add the four `VITE_*` variables above under **Project Settings → Environment Variables** for Production and Preview.
-4. Deploy, then add the final Vercel URL to Supabase Auth redirect URLs.
-5. Redeploy after changing any `VITE_*` variable because Vite embeds browser-safe values at build time.
+1. Dự án mới: áp dụng `supabase/migrations/202609220001_initial_marea.sql`, sau đó `supabase/migrations/202609260001_mayo_project_space.sql` trong SQL Editor của Supabase. Dự án Marea đang chạy chỉ cần migration thứ hai.
+2. Migration thứ hai giữ nguyên bảng cũ, thêm bảng nội bộ `project_sections`, `project_canvas_nodes`, `project_canvas_links`, `project_events`, lời mời, lời nhắn, bucket ảnh dự án riêng tư và bucket Feed công khai.
+3. `project_showcases` là view chỉ trả về các trường công khai được chọn. Bảng `projects` chứa trường nội bộ; RLS chỉ cho chủ dự án, thành viên và nhân sự được phép đọc nguyên hàng. Canvas và ảnh dự án riêng tư chỉ cho thành viên được cấp quyền xem; người chỉnh sửa có thể ghi. Chỉ chủ dự án được công bố snapshot.
+4. Chạy migration trước khi triển khai giao diện Mayo. Nếu chưa áp dụng, các trang dự án Mayo sẽ báo thiếu bảng/view.
 
-`vercel.json` provides the SPA fallback, so routes such as `/studio`, `/admin`, and `/reset-password` work after a direct reload.
+## Đăng nhập và địa chỉ web
 
-## Product areas
+Site dùng miễn phí GitHub Pages ở `https://labmourstudio.github.io/Mayo/` **sau khi repository được đổi tên thành `Mayo` và workflow triển khai thành công**. Trước khi đổi tên, trong Supabase **Authentication → URL Configuration**:
 
-- `/feed`, `/friends`, `/worlds`, `/projects`, `/learn`, `/profile`
-- `/studio`: private creator workspace for worlds, characters, projects, post drafts and course drafts
-- `/admin`: separate platform workspace for authorized Owner/Admin/Moderator roles
-- `/admin/settings/appearance`: safe brand settings, logo and favicon upload; no arbitrary CSS, JavaScript or HTML
+- Thêm Redirect URL `https://labmourstudio.github.io/Mayo/**`.
+- Đổi Site URL thành `https://labmourstudio.github.io/Mayo/` sau khi Mayo đã hoạt động.
+- Giữ Redirect URL `/Marea/**` trong giai đoạn chuyển tiếp để các email cũ tiếp tục mở được.
 
-## Security model
+Workflow `.github/workflows/deploy-pages.yml` dùng `GITHUB_REPOSITORY` để đặt base path đúng với tên repo. Trong GitHub Actions, giữ hai secrets `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`. Đường dẫn sâu được hỗ trợ bằng `404.html` cho SPA. Không cần Vercel, dịch vụ trả phí, domain riêng hoặc dữ liệu giả để chạy bản này.
 
-- Private content is excluded from public Feed, Projects, Learn and search queries.
-- Every application table has RLS enabled.
-- Creator mutations check row ownership or explicit membership in Postgres.
-- Admin role/status/course-review/appearance mutations use `SECURITY DEFINER` RPCs that re-check the caller's role and write audit logs.
-- Unauthorized Admin database access is denied even if a caller manually invokes the API. The application displays an HTTP 403-style screen for unauthorized routes.
-- Image uploads validate type and size in both the client and Storage bucket configuration.
-- User-authored content is stored as plain data and React escapes it; arbitrary user HTML/CSS/JavaScript is not accepted.
+## Quy trình dự án
 
-Review [`docs/SECURITY_AND_BACKEND.md`](docs/SECURITY_AND_BACKEND.md) before production launch for operational controls that remain the responsibility of the Supabase and Vercel accounts.
+- Feed chỉ tạo bài đăng. Dự án được tạo tại `/studio/projects` với hai lựa chọn: chỉ trên thiết bị hoặc riêng tư trên Supabase.
+- Bản chỉ trên thiết bị dùng IndexedDB, tự lưu, có xuất và nhập bản sao lưu JSON. Xóa dữ liệu trình duyệt có thể làm mất bản không sao lưu. Muốn mời người khác, chủ dự án xác nhận tải toàn bộ bản nháp lên Supabase trước.
+- Dự án cloud có mục nội dung linh hoạt, canvas nhân vật/vùng đất, ảnh riêng tư, sự kiện/phác thảo. Chủ dự án tạo liên kết mời một lần cho người xem hoặc người chỉnh sửa, hết hạn sau bảy ngày.
+- Khi công bố, chủ dự án đánh dấu từng mục sẽ đưa vào snapshot công khai. Ảnh được chọn mới sao chép sang bucket công khai. Người xem liên hệ qua lời nhắn trong Mayo: hợp tác, trao đổi chuyên môn hoặc đề nghị đầu tư; không có giao dịch đầu tư.
+- Chọn nội dung rồi dùng **In / lưu PDF 16:9** để mở hộp thoại in của trình duyệt và chọn **Save as PDF**. Bản xuất chứa mô tả, ảnh và liên kết của các mục đã chọn.
+
+## Giới hạn và vận hành
+
+- Quyền xem, chỉnh sửa và tải ảnh riêng tư được kiểm tra bằng RLS/Storage. Tùy chọn hạn chế sao chép hay xuất trên giao diện không thể ngăn người đã xem lưu tài nguyên hoặc chụp màn hình.
+- Bản nháp chỉ trên thiết bị không được mã hóa riêng; bảo vệ thiết bị và file JSON sao lưu như tài liệu riêng tư. File JSON có thể chứa ảnh dưới dạng dữ liệu nhúng.
+- Kiểm tra nhãn hiệu, tên miền và tài khoản mạng xã hội **Mayo** trước khi công bố thương mại. Việc đổi tên repository không xác lập quyền đối với tên thương hiệu.
+- Quản trị cần MFA/passkey, xác minh lại thay đổi quan trọng, vòng đời phiên và chính sách sao lưu tại Supabase trước khi vận hành rộng. Xem `docs/SECURITY_AND_BACKEND.md`.

@@ -1,4 +1,4 @@
-name: Deploy Marea to GitHub Pages
+name: Deploy Mayo to GitHub Pages
 
 on:
   push:
