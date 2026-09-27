@@ -10,6 +10,8 @@ import { FeedPage, ForbiddenPage, FriendsPage, LearnPage, ProfilePage, ProjectsP
 import OnboardingPage from './pages/OnboardingPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import { AdminPage, AppearanceAdminPage, StudioPage } from './pages/StudioAdminPages'
+import LocalProjectsPage, { LocalProjectGuard } from './pages/LocalProjectsPage'
+import { ProjectStudioPage } from './pages/ProjectPages'
 
 function AuthCallback() {
   const { session, profile, loading } = useAuth()
@@ -35,6 +37,8 @@ export default function App() {
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/studio" element={<StudioPage />} />
+        <Route path="/studio/projects" element={<LocalProjectsPage />} />
+        <Route path="/studio/projects/:projectId" element={<LocalProjectGuard><ProjectStudioPage localOnly /></LocalProjectGuard>} />
         <Route path="/search" element={<SearchPage />} />
       </Route>
       <Route element={<AdminRoute />}>

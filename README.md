@@ -2,7 +2,7 @@
 
 Mora là mạng xã hội sáng tạo của **Mour Studio**. Website tiếp tục dùng tài khoản, dữ liệu và repository `labmourstudio/Marea` đang hoạt động. Địa chỉ hiện tại là [labmourstudio.github.io/Marea](https://labmourstudio.github.io/Marea/); tên repository trong URL sẽ chỉ đổi sau khi cấu hình Supabase Auth cho địa chỉ mới.
 
-Giao diện Mora dùng chữ có nét cổ điển và ngôi sao bốn cánh, với các mục Feed, Friends, Worlds, Projects, Learn, Profile, Studio và Admin. Feed chỉ lưu bài đăng; tạo dự án trong Studio không tự công khai bài đăng hoặc dự án. Bản đang triển khai chưa có không gian dự án mở rộng; tính năng này nằm trên nhánh phát triển và cần migration Supabase trước khi phát hành. Website không chèn người dùng, bài viết, dự án hoặc số liệu giả.
+Giao diện Mora dùng chữ có nét cổ điển và ngôi sao bốn cánh, với thanh điều hướng ngang trên desktop và thanh dưới màn hình điện thoại. **Khám phá dự án** đọc những dự án được chủ sở hữu công bố; **Không gian của tôi → Dự án cá nhân** cho phép tạo bản nháp, tự lưu trên thiết bị, chỉnh canvas nhân vật/vùng đất, sự kiện, phác thảo và xuất bản trình bày qua chức năng in PDF. Bản nháp này dùng IndexedDB của trình duyệt, có thể tải/nhập file JSON; không thể truy cập từ máy khác chỉ bằng đường liên kết. Không có bước tự đồng bộ hoặc công khai khi tạo bản nháp. Tính năng đồng bộ, chia sẻ dự án cho cộng tác viên, thông tin công khai được chọn và liên hệ từ dự án nằm trên nhánh phát triển, cần migration Supabase trước khi phát hành. Website không chèn người dùng, bài viết, dự án hoặc số liệu giả.
 
 ## Chạy ứng dụng
 
@@ -25,6 +25,7 @@ Giữ `https://labmourstudio.github.io/Marea/**` trong Supabase **Authentication
 ## Quyền và giới hạn
 
 - Supabase Auth, Postgres RLS và Storage kiểm tra quyền đối với dữ liệu. Nội dung riêng tư không xuất hiện trên Feed hay danh sách Projects công khai.
+- Dự án chỉ lưu trên thiết bị hiện tại không được Supabase sao lưu hoặc bảo vệ bằng RLS. Người dùng cần xuất tệp JSON trước khi xóa dữ liệu trình duyệt hoặc đổi máy. Chỉ nội dung tạo riêng trên Supabase mới dùng các chính sách truy cập của Supabase.
 - Mục Admin chỉ điều hướng cho vai trò được phép; RPC tại database kiểm tra lại các thao tác quản trị. GitHub Pages là hosting tĩnh, nên trang từ chối của client không phải HTTP 403 từ server.
 - Giao diện hiện tại không đồng nghĩa với việc đã có MFA bắt buộc, phiên Admin ngắn hoặc cơ chế sao lưu. Xem [docs/SECURITY_AND_BACKEND.md](docs/SECURITY_AND_BACKEND.md).
 - Dịch vụ GitHub Pages và các gói Supabase miễn phí có hạn mức theo nhà cung cấp; kiểm tra hạn mức tài khoản khi vận hành. Không có tính năng thu phí trong ứng dụng.
