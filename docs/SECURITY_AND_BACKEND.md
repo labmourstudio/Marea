@@ -4,7 +4,7 @@
 
 ## Ranh giới dữ liệu dự án
 
-`projects` chứa metadata có thể có thông tin nội bộ như `description`, `contact_links`, `media_paths`, `share_token`. RLS cho phép chủ dự án, thành viên được mời và nhân sự được phép đọc hàng này. View `project_showcases` chỉ chứa các trường đã chỉ định và snapshot công khai, đồng thời chỉ hiển thị dự án đã xuất bản từ chủ tài khoản đang hoạt động. `project_sections`, `project_canvas_nodes`, `project_canvas_links`, `project_events` và bucket `project-drafts` chỉ được truy cập qua chính sách thành viên dự án. Feed có bảng `posts` và bucket `feed-media` riêng; đăng bài không tạo dự án.
+`projects` chứa metadata có thể có thông tin nội bộ như `description`, `contact_links`, `media_paths`, `share_token`. RLS cho phép chủ dự án, thành viên được mời và nhân sự được phép đọc hàng này. View `project_showcases` chỉ chứa các trường đã chỉ định và snapshot công khai, đồng thời chỉ hiển thị dự án đã xuất bản từ chủ tài khoản đang hoạt động. `project_sections`, `project_canvas_nodes`, `project_canvas_links`, `project_events` và bucket `project-drafts` chỉ được truy cập qua chính sách thành viên dự án. Feed có bảng `posts` và bucket `post-media` dành cho video và âm thanh; đăng bài không tạo dự án.
 
 Lời mời là token ngẫu nhiên dùng một lần, hết hạn sau bảy ngày, chấp nhận qua `accept_project_invitation()`. Hàm xác minh tài khoản hoạt động và nhập người dùng vào `project_members`. Chủ dự án có thể thu hồi lời mời chưa dùng bằng `revoke_project_invitation()`. Role `viewer` xem được nội dung riêng của dự án; `editor` sửa được. Chỉ chủ dự án sửa metadata và công bố dự án.
 

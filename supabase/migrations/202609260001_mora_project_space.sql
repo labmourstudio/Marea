@@ -220,14 +220,6 @@ end $$;
 insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
 values('project-drafts','project-drafts',false,8388608,array['image/jpeg','image/png','image/webp','image/gif'])
 on conflict(id) do nothing;
-insert into storage.buckets(id,name,public,file_size_limit,allowed_mime_types)
-values('feed-media','feed-media',true,20971520,array['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'])
-on conflict(id) do nothing;
-create policy feed_media_select on storage.objects for select using (bucket_id = 'feed-media');
-create policy feed_media_insert on storage.objects for insert to authenticated
-  with check (bucket_id = 'feed-media' and public.account_can_write() and (storage.foldername(name))[1] = auth.uid()::text);
-create policy feed_media_delete on storage.objects for delete to authenticated
-  using (bucket_id = 'feed-media' and (storage.foldername(name))[1] = auth.uid()::text);
 create policy project_drafts_select on storage.objects for select to authenticated
   using (bucket_id = 'project-drafts' and public.can_access_project_space(public.project_asset_id(name)));
 create policy project_drafts_insert on storage.objects for insert to authenticated

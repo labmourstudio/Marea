@@ -1,7 +1,7 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react'
 import { isSupabaseConfigured, publicStorageUrl, supabase } from '../lib/supabase'
 
-const defaults = { accent_color: '#7668ed', logo_path: '', favicon_path: '', font_family: 'Manrope', glass_opacity: 0.68 }
+const defaults = { accent_color: '#3f68dc', logo_path: '', favicon_path: '', font_family: 'Manrope', glass_opacity: 0.68 }
 const SiteSettingsContext = createContext(defaults)
 
 export function SiteSettingsProvider({ children }) {
@@ -28,4 +28,3 @@ export function SiteSettingsProvider({ children }) {
 }
 
 export function useSiteSettings() { return useContext(SiteSettingsContext) }
-

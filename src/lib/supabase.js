@@ -30,12 +30,3 @@ export async function uploadOwnedImage(bucket, userId, file) {
   return path
 }
 
-export async function uploadFeedMedia(userId, file) {
-  if (!supabase) throw new Error('Supabase chưa được cấu hình.')
-  if (!['image/jpeg','image/png','image/webp','image/gif','video/mp4','video/webm'].includes(file?.type)) throw new Error('Chỉ nhận ảnh hoặc video MP4/WebM.')
-  if (file.size > 20 * 1024 * 1024) throw new Error('Tệp phải nhỏ hơn 20 MB.')
-  const path = `${userId}/${crypto.randomUUID()}.${file.name.split('.').pop()?.toLowerCase() || 'bin'}`
-  const { error } = await supabase.storage.from('feed-media').upload(path, file, { contentType: file.type })
-  if (error) throw error
-  return path
-}

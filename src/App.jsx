@@ -5,8 +5,13 @@ import { AdminOnlyRoute, AdminRoute, OnboardingGuard, ProtectedRoute } from './c
 import { AuthProvider, useAuth } from './context/AuthContext'
 import { SiteSettingsProvider } from './context/SiteSettingsContext'
 import { LanguageProvider } from './context/LanguageContext'
+import { ThemeProvider } from './context/ThemeContext'
+import LanguageWelcome from './components/LanguageWelcome'
+import SettingsPage from './pages/SettingsPage'
+import DemoPage from './pages/DemoPage'
 import AuthPage from './pages/AuthPage'
-import { FeedPage, ForbiddenPage, FriendsPage, LearnPage, ProfilePage, ProjectsPage, SearchPage, WorldsPage } from './pages/MainPages'
+import { ForbiddenPage, FriendsPage, LearnPage, ProfilePage, ProjectsPage, SearchPage, WorldsPage } from './pages/MainPages'
+import FeedPage, { ProjectActivityPage } from './pages/FeedPage'
 import OnboardingPage from './pages/OnboardingPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import { AdminPage, AppearanceAdminPage, StudioPage } from './pages/StudioAdminPages'
@@ -24,7 +29,7 @@ function AuthCallback() {
 }
 
 export default function App() {
-  return <BrowserRouter basename={import.meta.env.BASE_URL}><LanguageProvider><SiteSettingsProvider><AuthProvider><Routes>
+  return <BrowserRouter basename={import.meta.env.BASE_URL}><LanguageProvider><ThemeProvider><LanguageWelcome /><SiteSettingsProvider><AuthProvider><Routes>
     <Route path="/login" element={<AuthPage />} />
     <Route path="/auth/callback" element={<AuthCallback />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
@@ -36,6 +41,7 @@ export default function App() {
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/worlds" element={<WorldsPage />} />
         <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
         <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/profile" element={<ProfilePage />} />
@@ -43,6 +49,8 @@ export default function App() {
         <Route path="/studio/projects" element={<MyProjectsPage />} />
         <Route path="/studio/projects/:projectId" element={<ProjectStudioPage />} />
         <Route path="/search" element={<SearchPage />} />
+        <Route path="/settings" element={<SettingsPage />} />
+        <Route path="/demo" element={<DemoPage />} />
       </Route>
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminPage />} />
@@ -57,5 +65,5 @@ export default function App() {
     </Route>
     <Route path="/" element={<Navigate to="/feed" replace />} />
     <Route path="*" element={<Navigate to="/feed" replace />} />
-  </Routes></AuthProvider></SiteSettingsProvider></LanguageProvider></BrowserRouter>
+  </Routes></AuthProvider></SiteSettingsProvider></ThemeProvider></LanguageProvider></BrowserRouter>
 }
