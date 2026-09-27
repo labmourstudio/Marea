@@ -1,6 +1,6 @@
 # Mora · Create & Connect
 
-Mora là mạng xã hội sáng tạo của **Mour Studio**. Website tiếp tục dùng tài khoản, dữ liệu và repository `labmourstudio/Marea` đang hoạt động. Địa chỉ hiện tại là [labmourstudio.github.io/Marea](https://labmourstudio.github.io/Marea/); tên repository trong URL sẽ chỉ đổi sau khi cấu hình Supabase Auth cho địa chỉ mới.
+Mora là mạng xã hội sáng tạo của **Mour Studio**. Repository hiện có đã đổi tên thành [`labmourstudio/Mora`](https://github.com/labmourstudio/Mora); website dùng địa chỉ [labmourstudio.github.io/Mora](https://labmourstudio.github.io/Mora/). Tên Marea vẫn nằm trong tên migration ban đầu và đường dẫn cũ. Dự án giữ tài khoản và dữ liệu Supabase hiện có.
 
 Giao diện Mora dùng chữ có nét cổ điển và ngôi sao bốn cánh, với thanh điều hướng ngang trên desktop và thanh dưới màn hình điện thoại. **Khám phá dự án** đọc những dự án được chủ sở hữu công bố; **Không gian của tôi → Dự án cá nhân** cho phép tạo bản nháp, tự lưu trên thiết bị, chỉnh canvas nhân vật/vùng đất, sự kiện, phác thảo và xuất bản trình bày qua chức năng in PDF. Bản nháp này dùng IndexedDB của trình duyệt, có thể tải/nhập file JSON; không thể truy cập từ máy khác chỉ bằng đường liên kết. Không có bước tự đồng bộ hoặc công khai khi tạo bản nháp. Tính năng đồng bộ, chia sẻ dự án cho cộng tác viên, thông tin công khai được chọn và liên hệ từ dự án nằm trên nhánh phát triển, cần migration Supabase trước khi phát hành. Website không chèn người dùng, bài viết, dự án hoặc số liệu giả.
 
@@ -20,9 +20,9 @@ npm run build
 
 ## Đưa bản hiện tại lên GitHub Pages
 
-Workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) triển khai khi `main` được cập nhật. Hai repository Actions secrets `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` cần chứa giá trị của dự án Supabase đang dùng. Base path được lấy từ tên repository GitHub, hiện là `/Marea/`. `404.html` xử lý truy cập trực tiếp đường dẫn trong ứng dụng.
+Workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) triển khai khi `main` được cập nhật. Hai repository Actions secrets `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` cần chứa giá trị của dự án Supabase đang dùng. Base path được lấy từ tên repository GitHub, hiện là `/Mora/`. `404.html` xử lý truy cập trực tiếp đường dẫn trong ứng dụng.
 
-Giữ `https://labmourstudio.github.io/Marea/**` trong Supabase **Authentication → URL Configuration** cho đến khi đổi URL. Để chuyển URL sang `/Mora/`, trước hết thêm `https://labmourstudio.github.io/Mora/**` vào Redirect URLs; sau đó đổi tên repository, kiểm tra Pages và đặt Site URL mới. Giữ redirect cũ trong giai đoạn chuyển tiếp để các email xác minh trước đó tiếp tục hoạt động. Đổi tên thương hiệu hiển thị không đòi hỏi đổi repository ngay.
+**Việc đổi tên repository đã xảy ra trước khi xác nhận cài đặt Auth.** Trong Supabase **Authentication → URL Configuration**, cần thêm `https://labmourstudio.github.io/Mora/**` vào Redirect URLs, đặt Site URL thành `https://labmourstudio.github.io/Mora/`, và giữ redirect `/Marea/**` trong giai đoạn chuyển tiếp. Kiểm tra đăng ký qua email, đăng nhập và đặt lại mật khẩu trên đường dẫn mới. Mã nguồn không thể tự thay đổi cài đặt Auth của tài khoản Supabase.
 
 ## Quyền và giới hạn
 

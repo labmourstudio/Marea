@@ -1,13 +1,13 @@
 # Bàn giao Mora · 27/09/2026
 
-Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công việc. **Không đưa nội dung tài liệu này lên giao diện sản phẩm.** Tên thương hiệu hiện tại là **Mora** của **Mour Studio**, tagline **Create & Connect** / “Nơi ý tưởng tìm thấy nhau”. Tên Kayo, Mayo và Marea chỉ còn là lịch sử dự án và tên repository/đường dẫn kỹ thuật.
+Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công việc. **Không đưa nội dung tài liệu này lên giao diện sản phẩm.** Tên thương hiệu hiện tại là **Mora** của **Mour Studio**, tagline **Create & Connect** / “Nơi ý tưởng tìm thấy nhau”. Tên Kayo, Mayo và Marea chỉ còn là lịch sử dự án hoặc tên migration ban đầu.
 
 ## Nguồn và địa chỉ
 
-- Repository duy nhất: `https://github.com/labmourstudio/Marea`, nhánh `main` triển khai qua `.github/workflows/deploy-pages.yml` tới `https://labmourstudio.github.io/Marea/`.
-- Không đổi `/Marea/` trong URL trước khi thêm redirect URL tương ứng trong Supabase Authentication và xác nhận luồng email đăng ký/đặt lại mật khẩu. Chữ hiển thị là Mora; URL cũ vẫn dùng được.
+- Repository đã được đổi tên trong lúc phát triển: `https://github.com/labmourstudio/Mora`, nhánh `main` triển khai qua `.github/workflows/deploy-pages.yml` tới `https://labmourstudio.github.io/Mora/`. Bản build mới phải dùng base `/Mora/`; HTML build cũ ở đường dẫn mới có thể vẫn trỏ tới `/Marea/assets/` và hiện trang trống.
+- **Cần hoàn tất cài đặt Auth:** thêm `https://labmourstudio.github.io/Mora/**` trong Supabase Authentication → URL Configuration → Redirect URLs, đổi Site URL thành `https://labmourstudio.github.io/Mora/` và giữ `/Marea/**` để không ngắt các email cũ. Chưa có quyền kiểm tra hoặc xác nhận các cài đặt này trên Supabase.
 - Vercel có `vercel.json` nhưng trang đang phục vụ qua **GitHub Pages**. Không tự nhận đã chuyển hosting.
-- PR dự thảo [#2](https://github.com/labmourstudio/Marea/pull/2) chuẩn bị không gian dự án cộng tác trên Supabase; **chưa merge** vì migration, quyền dữ liệu và luồng 2 tài khoản chưa được xác minh.
+- PR dự thảo [#2](https://github.com/labmourstudio/Mora/pull/2) chuẩn bị không gian dự án cộng tác trên Supabase; nhánh đã đồng bộ Feed mới nhưng **chưa merge** vì migration, quyền dữ liệu và luồng 2 tài khoản chưa được xác minh.
 
 ## Tình trạng chức năng ở bản này
 
@@ -44,11 +44,11 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 
 ## Đưa lên môi trường thật một cách an toàn
 
-1. Xác định SHA của `main`, kiểm tra GitHub Actions CI và Pages. Sau khi chạy migration nào, xác nhận schema đã tồn tại tại chính dự án Supabase mà `VITE_SUPABASE_URL` trỏ tới. **Không chạy lại initial migration trên dữ liệu hiện có.**
+1. Xác định SHA của `main`, kiểm tra GitHub Actions CI và Pages tại `/Mora/` sau khi đổi tên repository. Cập nhật Supabase Auth Redirect URLs và Site URL cho `/Mora/`, thử đăng ký/email xác minh/đặt lại mật khẩu. Sau khi chạy migration nào, xác nhận schema đã tồn tại tại chính dự án Supabase mà `VITE_SUPABASE_URL` trỏ tới. **Không chạy lại initial migration trên dữ liệu hiện có.**
 2. Để bật poll/audio/video, áp dụng `202609270001_mora_social_posts.sql` qua quyền quản trị Supabase (SQL Editor) trên dự án hiện tại. Kiểm tra lỗi migration; sau đó làm mới schema cache nếu cần. Không đưa service-role key vào mã client hoặc GitHub.
 3. Kiểm tra với **hai tài khoản thật**: người A đăng ảnh, video, audio và poll; người B xem, bình chọn, bình luận, gắn bài với dự án công khai A; A xem bài tại `/projects/{id}/activity`. Kiểm tra dự án riêng tư không có trong selector hoặc hoạt động công khai, bình chọn không được vote vào phương án của bài khác, file chỉ ghi dưới đường dẫn UID của người đăng.
 4. Xác minh UI trên desktop/tablet/mobile, sáng/tối, reload thẳng các tuyến khi dùng GitHub Pages. Không tự công bố bài demo. Giữ PR #2 là draft cho đến khi test migration cộng tác độc lập.
-5. Nếu muốn tên miền/URL Mora, cấu hình Supabase Authentication Redirect URLs trước, sau đó cập nhật GitHub repository/Pages và thử đăng ký/đặt lại mật khẩu. Không chỉ đổi repo URL.
+5. Repo đã mang tên Mora; không coi việc đổi tên repo là hoàn tất chuyển địa chỉ đăng nhập. Giữ `/Marea/` trong danh sách URL được phép cho các liên kết email cũ nếu chúng còn hiệu lực.
 
 ## Ưu tiên tiếp theo
 
@@ -62,7 +62,7 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 ```bash
 npm ci
 npm run lint
-GITHUB_ACTIONS=true GITHUB_REPOSITORY=labmourstudio/Marea npm run build
+GITHUB_ACTIONS=true GITHUB_REPOSITORY=labmourstudio/Mora npm run build
 ```
 
 Frontend cần `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` của dự án hiện tại; GitHub Actions đã dùng secrets cho Pages. Bản chạy local sử dụng `.env.local` từ `.env.example`. Nếu không có quyền Supabase, có thể sửa giao diện và bản demo, nhưng ghi rõ rằng migration và các luồng gắn dữ liệu còn chờ xác minh.
