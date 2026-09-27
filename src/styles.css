@@ -479,7 +479,7 @@ html[data-theme="dark"] .learn-hero .learn-search input::placeholder { color:#55
   position:relative; display:inline-block; font-family:Georgia,'Times New Roman',serif;
   font-size:var(--brand-type-size); font-weight:700; line-height:1.09; letter-spacing:-.063em;
   color:#1b3774; background:linear-gradient(116deg,#102a68 0%,#375da8 15%,#d8e9ff 20%,#345aa1 26%,#213c81 41%,#a68ddf 49%,#edf6ff 54%,#4f6ec0 61%,#193471 79%,#859ce2 92%,#203a82 100%);
-  background-size:165% 150%; background-position:0 50%; background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  background-size:125% 150%; background-position:0 50%; background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
   -webkit-text-stroke:.35px rgba(19,38,89,.45); text-shadow:0 4px 15px rgba(32,47,112,.23);
   transition:background-position .8s ease,transform .55s ease,text-shadow .55s ease;
 }
