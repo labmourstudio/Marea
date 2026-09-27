@@ -4,6 +4,8 @@ Mora là mạng xã hội sáng tạo của **Mour Studio**. Website tiếp tụ
 
 Giao diện Mora dùng chữ có nét cổ điển và ngôi sao bốn cánh, với thanh điều hướng ngang trên desktop và thanh dưới màn hình điện thoại. **Khám phá dự án** đọc những dự án được chủ sở hữu công bố; **Không gian của tôi → Dự án cá nhân** cho phép tạo bản nháp, tự lưu trên thiết bị, chỉnh canvas nhân vật/vùng đất, sự kiện, phác thảo và xuất bản trình bày qua chức năng in PDF. Bản nháp này dùng IndexedDB của trình duyệt, có thể tải/nhập file JSON; không thể truy cập từ máy khác chỉ bằng đường liên kết. Không có bước tự đồng bộ hoặc công khai khi tạo bản nháp. Tính năng đồng bộ, chia sẻ dự án cho cộng tác viên, thông tin công khai được chọn và liên hệ từ dự án nằm trên nhánh phát triển, cần migration Supabase trước khi phát hành. Website không chèn người dùng, bài viết, dự án hoặc số liệu giả.
 
+**Cập nhật 27/09/2026:** giao diện nền xanh dương đậm loang tím, chế độ sáng/tối/theo thiết bị trong Cài đặt và chọn ngôn ngữ lúc vào site (English mặc định; 11 tùy chọn dịch phần giao diện cốt lõi). Feed mới cho đăng ảnh, chủ đề và liên kết dự án công khai bằng schema có sẵn. Bình chọn cùng video/âm thanh chờ migration [`202609270001_mora_social_posts.sql`](supabase/migrations/202609270001_mora_social_posts.sql), nên chưa có trên database live. Ví dụ Morimori, Mottopa, khóa học và ba bài viết xuất hiện **chỉ trong trang `/demo` có nhãn minh họa**, không thêm vào dữ liệu thật. Xem [tài liệu bàn giao](docs/HANDOFF_MORA_2026-09-27.md) trước khi phát triển tiếp.
+
 ## Chạy ứng dụng
 
 ```bash

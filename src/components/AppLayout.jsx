@@ -5,7 +5,6 @@ import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { publicStorageUrl } from '../lib/supabase'
 import Brand from './Brand'
-import LanguageToggle from './LanguageToggle'
 
 const navItems = [
   ['/feed', 'feed', Compass],
@@ -36,7 +35,6 @@ export default function AppLayout() {
         <NavLink className="header-brand" to="/feed" aria-label="Mora · Bảng tin"><Brand /><small>by Mour Studio</small></NavLink>
         <button className="search-box" onClick={() => go('/search')}><Search size={17} /><span>{t.search}</span><kbd>⌘ K</kbd></button>
         <div className="top-actions">
-          <LanguageToggle />
           <button className="icon-button" aria-label={t.messages} title="Tin nhắn đang phát triển" disabled><MessageCircle /></button>
           <button className="icon-button" aria-label={t.notifications} title="Thông báo đang phát triển" disabled><Bell /></button>
           <div className="header-account">
@@ -45,6 +43,7 @@ export default function AppLayout() {
               <div className="account-identity"><strong>{profile?.display_name || profile?.username}</strong><small>@{profile?.username}</small></div>
               <button onClick={() => go('/profile')}><UserRound /> {t.profile}</button>
               <button onClick={() => go('/studio')}><Settings /> {t.studio}</button>
+              <button onClick={() => go('/settings')}><Settings /> {t.settings}</button>
               {['owner', 'admin', 'moderator'].includes(profile?.platform_role) && <button onClick={() => go('/admin')}><Settings /> Quản trị</button>}
               <button onClick={() => { setAccountOpen(false); signOut() }}><LogOut /> {t.signout}</button>
             </div>}
