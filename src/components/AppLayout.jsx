@@ -12,7 +12,7 @@ const navItems = [
   ['/worlds', 'worlds', Globe2],
   ['/projects', 'projects', BriefcaseBusiness],
   ['/learn', 'learn', BookOpen],
-  ['/profile', 'profile', UserRound],
+  ['/studio', 'studio', Settings],
 ]
 
 function Avatar({ profile }) {
@@ -68,7 +68,6 @@ export default function AppLayout() {
       </div>
       <nav className="main-nav" aria-label="Điều hướng chính">
         {navItems.map(([to, key, Icon]) => <NavLink key={to} to={to} onClick={() => setAccountOpen(false)}><Icon /><span>{t[key]}</span></NavLink>)}
-        <NavLink className="nav-studio" to="/studio" onClick={() => setAccountOpen(false)}><Settings /><span>{t.studio}</span></NavLink>
       </nav>
     </header>
     <main className="app-main"><div className="page-container"><Outlet /></div></main>

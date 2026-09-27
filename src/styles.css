@@ -471,3 +471,53 @@ html[data-theme="dark"] .learn-hero .learn-search input::placeholder { color:#55
 }
 @media(max-width:410px) { .profile-layout aside { grid-template-columns:1fr; } }
 @media(prefers-reduced-motion:reduce) { .site-header { transition:none; } }
+
+/* The wordmark is live interface text, with a glass highlight on hover and focus. */
+.brand { --brand-type-size:38px; display:inline-flex; align-items:center; gap:5px; white-space:nowrap; isolation:isolate; }
+.brand-liquid-star { display:block; flex:none; width:41px; height:41px; filter:drop-shadow(0 3px 8px rgba(72,48,178,.24)); transition:transform .55s ease,filter .55s ease; }
+.brand-liquid-text {
+  position:relative; display:inline-block; font-family:Georgia,'Times New Roman',serif;
+  font-size:var(--brand-type-size); font-weight:700; line-height:1.09; letter-spacing:-.063em;
+  color:#1b3774; background:linear-gradient(135deg,#122750 3%,#244796 24%,#5678c4 35%,#5d46af 43%,#18346b 63%,#3d65b1 83%,#1a2e65);
+  background-size:205% 150%; background-position:0 50%; background-clip:text; -webkit-background-clip:text; -webkit-text-fill-color:transparent;
+  -webkit-text-stroke:.35px rgba(19,38,89,.34); text-shadow:0 4px 15px rgba(32,47,112,.16);
+  transition:background-position .8s ease,transform .55s ease,text-shadow .55s ease;
+}
+.brand-liquid-text::after {
+  content:attr(data-text); position:absolute; inset:0; pointer-events:none;
+  background:linear-gradient(110deg,transparent 18%,rgba(255,255,255,.75) 33%,transparent 48%);
+  background-size:250% 100%; background-position:0 50%; background-clip:text; -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent; opacity:0; transition:background-position .85s ease,opacity .4s ease;
+}
+.brand:hover .brand-liquid-star,.header-brand:focus-visible .brand-liquid-star { transform:rotate(9deg) scale(1.08); filter:drop-shadow(0 5px 12px rgba(102,67,208,.42)); }
+.brand:hover .brand-liquid-text,.header-brand:focus-visible .brand-liquid-text { background-position:100% 50%; transform:translateY(-1px); text-shadow:0 5px 18px rgba(52,79,180,.32); }
+.brand:hover .brand-liquid-text::after,.header-brand:focus-visible .brand-liquid-text::after { opacity:.85; background-position:100% 50%; }
+.brand:active .brand-liquid-star { transform:rotate(-7deg) scale(.96); }
+html[data-theme="dark"] .brand-liquid-text {
+  color:#eef4ff; background-image:linear-gradient(135deg,#f8fbff 5%,#bbd3ff 24%,#e2c4ff 43%,#f8faff 64%,#a8caff 83%,#e9d9ff);
+  -webkit-text-stroke:.35px rgba(224,234,255,.38); text-shadow:0 3px 16px rgba(155,163,255,.3);
+}
+.header-brand>small { margin-left:47px; }
+.auth-shell-simple .auth-title .brand { --brand-type-size:54px; gap:8px; }
+.auth-shell-simple .auth-title .brand-liquid-star { width:54px; height:54px; }
+.brand.compact .brand-liquid-text { display:none; }
+.brand.compact .brand-liquid-star { width:40px; height:40px; }
+/* Restore dark hero surfaces after the shared glass-card background declaration. */
+html:not([data-theme="dark"]) .worlds-hero.glass-card,
+html:not([data-theme="dark"]) .projects-hero.glass-card,
+html:not([data-theme="dark"]) .learn-hero.glass-card {
+  color:#fff;
+  background:radial-gradient(circle at 78% 10%,rgba(176,143,250,.2),transparent 47%),linear-gradient(130deg,rgba(20,59,139,.97),rgba(45,46,136,.95) 55%,rgba(80,43,148,.94));
+}
+html:not([data-theme="dark"]) .demo-banner.glass-card { background:linear-gradient(130deg,rgba(18,54,135,.95),rgba(79,46,141,.94)); color:white; }
+a.primary-button { text-decoration:none; }
+@media(max-width:640px) {
+  .brand { --brand-type-size:30px; gap:4px; }
+  .brand-liquid-star { width:32px; height:32px; }
+  .header-brand>small { margin-left:37px; }
+  .auth-shell-simple .auth-title .brand { --brand-type-size:50px; }
+  .mobile-nav a[href$="/studio"] span { white-space:normal; max-width:67px; line-height:1.15; text-overflow:clip; }
+}
+@media(prefers-reduced-motion:reduce) {
+  .brand-liquid-star,.brand-liquid-text,.brand-liquid-text::after { transition:none; }
+}
