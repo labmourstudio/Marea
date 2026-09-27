@@ -49,10 +49,17 @@ create policy poll_votes_insert on public.post_poll_votes for insert to authenti
   )
 );
 create policy poll_votes_update on public.post_poll_votes for update to authenticated
-using (user_id=auth.uid()) with check (user_id=auth.uid() and public.account_can_write());
+using (user_id=auth.uid()) with check (
+  user_id=auth.uid() and public.account_can_write() and exists (
+    select 1 from public.posts p where p.id=post_id and p.content_type='poll'
+      and p.status='published' and p.visibility in ('public','showcase')
+  )
+);
 
-create or replace function public.validate_feed_post() returns trigger language plpgsql
-set search_path=public as $$
+-- SECURITY DEFINER verifies public status even if the cloud workspace RLS hides
+-- the full projects row from non-members. It only returns NEW, never private data.
+create or replace function public.validate_feed_post() returns trigger language plpgsql security definer
+set search_path='' as $$
 begin
   if new.project_id is not null and not exists (
     select 1 from public.projects p where p.id=new.project_id and p.status='published' and p.visibility in ('public','showcase')
@@ -66,7 +73,7 @@ create trigger validate_feed_post before insert or update of project_id,content_
 for each row execute function public.validate_feed_post();
 
 create or replace function public.get_poll_results(target_post_id uuid)
-returns table (option_id uuid,votes bigint) language plpgsql stable security definer set search_path=public as $$
+returns table (option_id uuid,votes bigint) language plpgsql stable security definer set search_path='' as $$
 begin
   if auth.uid() is null or not exists (
     select 1 from public.posts p where p.id=target_post_id and p.content_type='poll'
