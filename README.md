@@ -1,6 +1,6 @@
 # Mora · Create & Connect
 
-Mora là mạng xã hội sáng tạo của **Mour Studio**. Bản này tiếp tục ứng dụng Marea hiện có; không xóa người dùng hay dữ liệu thật và không chèn nội dung mẫu vào sản phẩm.
+Mora là mạng xã hội sáng tạo của **Mour Studio**. Trang đang hoạt động ở `https://labmourstudio.github.io/Marea/` đã có thanh điều hướng ngang, giao diện kính mờ và công cụ dự án lưu trên thiết bị. Nhánh phát triển này bổ sung phần đồng bộ và cộng tác trên Supabase; không xóa người dùng hay dữ liệu thật và không chèn nội dung mẫu vào sản phẩm.
 
 ## Phần tiếp tục sử dụng và phần xây thêm
 
@@ -28,7 +28,7 @@ npm run build
 1. Dự án mới: áp dụng `supabase/migrations/202609220001_initial_marea.sql`, sau đó `supabase/migrations/202609260001_mora_project_space.sql` trong SQL Editor của Supabase. Dự án Marea đang chạy chỉ cần migration thứ hai.
 2. Migration thứ hai giữ nguyên bảng cũ, thêm bảng nội bộ `project_sections`, `project_canvas_nodes`, `project_canvas_links`, `project_events`, lời mời, lời nhắn, bucket ảnh dự án riêng tư và bucket Feed công khai.
 3. `project_showcases` là view chỉ trả về các trường công khai được chọn. Bảng `projects` chứa trường nội bộ; RLS chỉ cho chủ dự án, thành viên và nhân sự được phép đọc nguyên hàng. Canvas và ảnh dự án riêng tư chỉ cho thành viên được cấp quyền xem; người chỉnh sửa có thể ghi. Chỉ chủ dự án được công bố snapshot.
-4. Chạy migration trước khi triển khai giao diện Mora. Nếu chưa áp dụng, các trang dự án Mora sẽ báo thiếu bảng/view.
+4. Chạy migration và kiểm tra quyền truy cập trước khi triển khai tính năng cloud trong nhánh này. Bản đang chạy vẫn cho phép chỉnh sửa dự án **chỉ trên thiết bị** mà không cần migration; nếu triển khai nhánh này quá sớm, các trang dự án cloud sẽ báo thiếu bảng/view.
 
 ## Đăng nhập và địa chỉ web
 

@@ -1,11 +1,11 @@
 import { useState } from 'react'
-import { Bell, BookOpen, BriefcaseBusiness, ChevronDown, Compass, Globe2, LogOut, Menu, MessageCircle, Search, Settings, UserRound, UsersRound, X } from 'lucide-react'
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { Bell, BookOpen, BriefcaseBusiness, Compass, Globe2, LogOut, MessageCircle, Search, Settings, UserRound, UsersRound } from 'lucide-react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
+import { useLanguage } from '../context/LanguageContext'
 import { publicStorageUrl } from '../lib/supabase'
 import Brand from './Brand'
 import LanguageToggle from './LanguageToggle'
-import { useLanguage } from '../context/LanguageContext'
 
 const navItems = [
   ['/feed', 'feed', Compass],
@@ -16,58 +16,49 @@ const navItems = [
   ['/profile', 'profile', UserRound],
 ]
 
-function Avatar({ profile, size = 'avatar-sm' }) {
+function Avatar({ profile }) {
   const url = publicStorageUrl('avatars', profile?.avatar_path)
-  if (url) return <img className={`avatar ${size}`} src={url} alt="" />
-  return <span className={`avatar avatar-fallback ${size}`}>{(profile?.display_name || profile?.username || 'M').slice(0, 1).toUpperCase()}</span>
+  return url ? <img className="avatar avatar-sm" src={url} alt="" /> : <span className="avatar avatar-fallback avatar-sm">{(profile?.display_name || profile?.username || 'M').slice(0, 1).toUpperCase()}</span>
 }
 
 export default function AppLayout() {
   const { profile, signOut } = useAuth()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [accountOpen, setAccountOpen] = useState(false)
-  const location = useLocation()
-  const navigate = useNavigate()
   const { t } = useLanguage()
-  const section = location.pathname.split('/')[1]
+  const navigate = useNavigate()
+  const [accountOpen, setAccountOpen] = useState(false)
 
-  return (
-    <div className="app-shell">
-      <span className="aurora app-a" /><span className="aurora app-b" />
-      {menuOpen && <button className="scrim menu-scrim" aria-label="Đóng menu" onClick={() => setMenuOpen(false)} />}
-      <aside className={`sidebar glass-panel${menuOpen ? ' mobile-open' : ''}`}>
-        <button className="mobile-close" onClick={() => setMenuOpen(false)} aria-label="Đóng"><X /></button>
-        <div className="sidebar-top"><Brand /><small className="brand-byline">by Mour Studio</small></div>
-        <nav className="main-nav">
-          {navItems.map(([to, key, Icon]) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}><Icon /><span>{t[key]}</span></NavLink>)}
-        </nav>
-        <div className="sidebar-space" />
-        <button className="studio-link" onClick={() => navigate('/studio')}>
-          <div><Settings size={17} /></div><span><strong>{t.studio}</strong><small>Quản lý nội dung</small></span>
-        </button>
-        <div className="account-block">
-          {accountOpen && <div className="account-pop glass-card">
-            <button onClick={() => navigate('/profile')}><UserRound /> Hồ sơ</button>
-            {['owner', 'admin', 'moderator'].includes(profile?.platform_role) && <button onClick={() => navigate('/admin')}><Settings /> Quản trị</button>}
-            <button onClick={signOut}><LogOut /> {t.signout}</button>
-          </div>}
-          <button className="account-button" onClick={() => setAccountOpen((value) => !value)}>
-            <Avatar profile={profile} />
-            <span><strong>{profile?.display_name || profile?.username}</strong><small>@{profile?.username}</small></span><ChevronDown size={15} />
-          </button>
+  function go(path) { setAccountOpen(false); navigate(path) }
+
+  return <div className="app-shell">
+    <span className="aurora app-a" /><span className="aurora app-b" />
+    <header className="site-header glass-panel">
+      <div className="site-header-primary">
+        <NavLink className="header-brand" to="/feed" aria-label="Mora · Bảng tin"><Brand /><small>by Mour Studio</small></NavLink>
+        <button className="search-box" onClick={() => go('/search')}><Search size={17} /><span>{t.search}</span><kbd>⌘ K</kbd></button>
+        <div className="top-actions">
+          <LanguageToggle />
+          <button className="icon-button" aria-label={t.messages} title="Tin nhắn đang phát triển" disabled><MessageCircle /></button>
+          <button className="icon-button" aria-label={t.notifications} title="Thông báo đang phát triển" disabled><Bell /></button>
+          <div className="header-account">
+            <button className="top-avatar" aria-label="Menu tài khoản" aria-expanded={accountOpen} onClick={() => setAccountOpen((value) => !value)}><Avatar profile={profile} /></button>
+            {accountOpen && <div className="account-pop glass-card">
+              <div className="account-identity"><strong>{profile?.display_name || profile?.username}</strong><small>@{profile?.username}</small></div>
+              <button onClick={() => go('/profile')}><UserRound /> {t.profile}</button>
+              <button onClick={() => go('/studio')}><Settings /> {t.studio}</button>
+              {['owner', 'admin', 'moderator'].includes(profile?.platform_role) && <button onClick={() => go('/admin')}><Settings /> Quản trị</button>}
+              <button onClick={() => { setAccountOpen(false); signOut() }}><LogOut /> {t.signout}</button>
+            </div>}
+          </div>
         </div>
-      </aside>
-      <main className="app-main">
-        <header className="topbar glass-panel">
-          <div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)}><Menu /></button><h2>{t[section] || 'Mora'}</h2></div>
-          <button className="search-box" onClick={() => navigate('/search')}><Search size={16} /><span>{t.search}</span><kbd>⌘ K</kbd></button>
-          <div className="top-actions"><LanguageToggle /><button className="icon-button" aria-label={t.messages}><MessageCircle /></button><button className="icon-button" aria-label={t.notifications}><Bell /></button><button className="top-avatar" onClick={() => setAccountOpen((value) => !value)}><Avatar profile={profile} /></button></div>
-        </header>
-        <div className="page-container"><Outlet /></div>
-      </main>
-      <nav className="mobile-nav glass-panel">
-        {navItems.slice(0, 5).map(([to, key, Icon]) => <NavLink key={to} to={to}><Icon /><span>{t[key]}</span></NavLink>)}
+      </div>
+      <nav className="main-nav" aria-label="Điều hướng chính">
+        {navItems.map(([to, key, Icon]) => <NavLink key={to} to={to} onClick={() => setAccountOpen(false)}><Icon /><span>{t[key]}</span></NavLink>)}
+        <NavLink className="nav-studio" to="/studio" onClick={() => setAccountOpen(false)}><Settings /><span>{t.studio}</span></NavLink>
       </nav>
-    </div>
-  )
+    </header>
+    <main className="app-main"><div className="page-container"><Outlet /></div></main>
+    <nav className="mobile-nav glass-panel" aria-label="Điều hướng điện thoại">
+      {navItems.map(([to, key, Icon]) => <NavLink key={to} to={to}><Icon /><span>{t[key]}</span></NavLink>)}
+    </nav>
+  </div>
 }
