@@ -37,7 +37,7 @@ export default function AppLayout() {
       {menuOpen && <button className="scrim menu-scrim" aria-label="Đóng menu" onClick={() => setMenuOpen(false)} />}
       <aside className={`sidebar glass-panel${menuOpen ? ' mobile-open' : ''}`}>
         <button className="mobile-close" onClick={() => setMenuOpen(false)} aria-label="Đóng"><X /></button>
-        <div className="sidebar-top"><Brand /></div>
+        <div className="sidebar-top"><Brand /><small className="brand-byline">by Mour Studio</small></div>
         <nav className="main-nav">
           {navItems.map(([to, key, Icon]) => <NavLink key={to} to={to} onClick={() => setMenuOpen(false)}><Icon /><span>{t[key]}</span></NavLink>)}
         </nav>
@@ -59,7 +59,7 @@ export default function AppLayout() {
       </aside>
       <main className="app-main">
         <header className="topbar glass-panel">
-          <div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)}><Menu /></button><h2>{t[section] || 'Marea'}</h2></div>
+          <div className="topbar-left"><button className="menu-button" onClick={() => setMenuOpen(true)}><Menu /></button><h2>{t[section] || 'Mora'}</h2></div>
           <button className="search-box" onClick={() => navigate('/search')}><Search size={16} /><span>{t.search}</span><kbd>⌘ K</kbd></button>
           <div className="top-actions"><LanguageToggle /><button className="icon-button" aria-label={t.messages}><MessageCircle /></button><button className="icon-button" aria-label={t.notifications}><Bell /></button><button className="top-avatar" onClick={() => setAccountOpen((value) => !value)}><Avatar profile={profile} /></button></div>
         </header>

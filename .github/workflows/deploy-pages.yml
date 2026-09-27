@@ -1,4 +1,4 @@
-name: Deploy Marea to GitHub Pages
+name: Deploy Mora to GitHub Pages
 
 on:
   push:

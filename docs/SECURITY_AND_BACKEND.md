@@ -1,4 +1,4 @@
-# Marea production architecture
+# Mora: kiến trúc bảo mật kế thừa
 
 The repository uses Supabase Auth, Postgres Row Level Security and Storage policies as its application backend. The initial schema and authorization rules live in `supabase/migrations`. The controls below describe both the implemented database boundary and the account-level controls that must be configured before accepting production data.
 
@@ -9,7 +9,7 @@ The repository uses Supabase Auth, Postgres Row Level Security and Storage polic
 - Keep admin sessions shorter than standard user sessions and require recent re-authentication for critical changes.
 - Resolve the authenticated account and its restrictions for every request.
 - Enforce role and permission checks in Postgres RLS and privileged database functions. Hiding navigation is never authorization.
-- Return `401` for unauthenticated access and `403` for authenticated accounts without permission.
+- A future server or gateway should return HTTP `401` for unauthenticated access and `403` for authenticated accounts without permission. GitHub Pages serves a client-side route instead, and cannot itself enforce those HTTP statuses.
 - Use least-privilege roles such as `owner`, `admin`, `moderator`, `course_reviewer` and `member`.
 
 Example server-side decision order:
@@ -24,11 +24,11 @@ Example server-side decision order:
 ## Content visibility
 
 - `private`: owner and explicitly invited collaborators only.
-- `unlisted`: accessible by an unguessable link but excluded from feeds, indexes and search.
+- `unlisted`: excluded from feeds, indexes and search; a future sharing route must use an explicit permission check before exposing content via link.
 - `public`: eligible for profiles, feeds and search.
 - `showcase`: public content with an additional project presentation layer.
 - Search and feed queries must filter by visibility at the database query level, not after records are returned.
-- Media should use private object storage and short-lived signed URLs where access is restricted.
+- Media that needs access restrictions must use private object storage and signed URLs. The original `project-media` bucket is public; do not upload draft project media into it. The planned private `project-drafts` bucket requires the Mora migration before use.
 
 ## Implemented domain model
 
@@ -44,7 +44,7 @@ User-owned entities include an owner/user reference, visibility where applicable
 
 ## Admin controls
 
-- Admin is served from a separately protected route group and all privileged mutations are checked again in database RPCs.
+- Admin has a client-side route guard and privileged mutations are checked again in database RPCs. A separate server-side HTTP route gate is still needed to enforce server responses.
 - Require MFA/passkey enrollment for privileged roles.
 - Add rate limits, IP/device anomaly alerts and step-up authentication for destructive or brand-wide changes.
 - Platform-theme changes are allowlisted and audited. Add a version/rollback table before delegating appearance access beyond trusted administrators.

@@ -16,8 +16,9 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
+  const afterLogin = '/feed'
 
-  if (!loading && session) return <Navigate to={profile?.onboarding_completed ? '/feed' : '/onboarding'} replace />
+  if (!loading && session) return <Navigate to={profile?.onboarding_completed ? afterLogin : '/onboarding'} replace />
 
   async function submit(event) {
     event.preventDefault(); setBusy(true); setError(''); setMessage('')
@@ -29,7 +30,7 @@ export default function AuthPage() {
       } else {
         const { error: authError } = await supabase.auth.signInWithPassword({ email, password })
         if (authError) throw authError
-        navigate('/feed')
+        navigate(afterLogin)
       }
     } catch (authError) { setError(authError.message) } finally { setBusy(false) }
   }
@@ -47,12 +48,12 @@ export default function AuthPage() {
     <header className="auth-header"><Brand /><LanguageToggle glass /></header>
     <section className="auth-visual">
       <div className="orbit orbit-one" /><div className="orbit orbit-two" />
-      <div className="world-sphere"><div className="sphere-core"><Globe2 size={38} /><span>MAREA</span><div className="float-chip chip-a"><BookOpen /> Truyện</div><div className="float-chip chip-b"><Gamepad2 /> Game</div></div></div>
-      <div className="auth-story"><div className="eyebrow"><span /> CỘNG ĐỒNG SÁNG TẠO</div><h1>Where ideas<br />become worlds.</h1><p>Nơi ý tưởng trở thành thế giới.</p></div>
+      <div className="world-sphere"><div className="sphere-core"><Globe2 size={38} /><span>MORA</span><div className="float-chip chip-a"><BookOpen /> Truyện</div><div className="float-chip chip-b"><Gamepad2 /> Game</div></div></div>
+      <div className="auth-story"><div className="eyebrow"><span /> MORA · MOUR STUDIO</div><h1>Create<br />& Connect.</h1><p>Nơi ý tưởng tìm thấy nhau.</p></div>
     </section>
     <section className="auth-panel-wrap"><div className="auth-panel glass-card">
-      <div className="auth-title"><Brand /><h2>{mode === 'login' ? 'Chào mừng trở lại' : 'Tạo tài khoản Marea'}</h2><p>{mode === 'login' ? 'Tiếp tục hành trình sáng tạo của bạn.' : 'Bắt đầu xây dựng thế giới của riêng bạn.'}</p></div>
-      {!configured ? <div className="config-notice"><strong>Chưa kết nối Supabase</strong><p>Thêm `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` trong Vercel để bật đăng nhập.</p></div> : !emailMode ? <>
+      <div className="auth-title"><Brand /><h2>{mode === 'login' ? 'Chào mừng trở lại' : 'Tạo tài khoản Mora'}</h2><p>{mode === 'login' ? 'Khám phá, chia sẻ và kết nối sáng tạo.' : 'Tham gia cộng đồng sáng tạo của Mour Studio.'}</p></div>
+      {!configured ? <div className="config-notice"><strong>Chưa kết nối Supabase</strong><p>Thêm `VITE_SUPABASE_URL` và `VITE_SUPABASE_ANON_KEY` vào GitHub Actions secrets để bật đăng nhập.</p></div> : !emailMode ? <>
         {import.meta.env.VITE_ENABLE_GOOGLE_OAUTH === 'true' && <button className="social-button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}><span className="google-g">G</span>Tiếp tục với Google</button>}
         {import.meta.env.VITE_ENABLE_APPLE_OAUTH === 'true' && <button className="social-button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'apple' })}><span className="apple-logo">●</span>Tiếp tục với Apple</button>}
         <button className="primary-button full" onClick={() => setEmailMode(true)}>Tiếp tục bằng email</button>
@@ -65,7 +66,7 @@ export default function AuthPage() {
       </form>}
       {error && <p className="form-message error">{error}</p>}{message && <p className="form-message success">{message}</p>}
       <p className="auth-switch">{mode === 'login' ? 'Chưa có tài khoản?' : 'Đã có tài khoản?'} <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setMessage('') }}>{mode === 'login' ? 'Đăng ký' : 'Đăng nhập'}</button></p>
-      <p className="terms">Khi tiếp tục, bạn đồng ý với Điều khoản và Chính sách quyền riêng tư của Marea.</p>
+      <p className="terms">Khi tiếp tục, bạn đồng ý với Điều khoản và Chính sách quyền riêng tư của Mora.</p>
     </div></section>
   </div>
 }

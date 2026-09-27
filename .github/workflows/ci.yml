@@ -1,4 +1,4 @@
-name: Marea CI
+name: Mora CI
 
 on:
   push:
