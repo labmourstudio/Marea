@@ -84,7 +84,7 @@ export default function FeedPage() {
   const { language, t } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   const [content, setContent] = useState('')
-  const [kind, setKind] = useState('article')
+  const [kind, setKind] = useState('discussion')
   const [file, setFile] = useState(null)
   const [preview, setPreview] = useState('')
   const [topic, setTopic] = useState('')
@@ -154,7 +154,7 @@ export default function FeedPage() {
         const { error: publishError } = await supabase.from('posts').update({ status:'published',published_at:new Date().toISOString() }).eq('id',createdId)
         if (publishError) throw publishError
       }
-      setContent(''); setKind('article'); setFile(null); setTopic(''); setProjectId(''); setOptions(['','']); await load()
+      setContent(''); setKind('discussion'); setFile(null); setTopic(''); setProjectId(''); setOptions(['','']); await load()
     } catch (caught) {
       if (createdId) await supabase.from('posts').delete().eq('id',createdId)
       if (uploaded) await supabase.storage.from(uploaded.bucket).remove([uploaded.path])
@@ -164,9 +164,9 @@ export default function FeedPage() {
 
   return <div className="content-page"><section className="welcome-row"><div><span className="eyebrow purple">MORA · CREATE & CONNECT</span><h1>{t.welcomeBack}, {profile?.display_name || profile?.username}</h1><p>{t.feedIntro}</p></div></section>
     <div className="feed-layout"><div className="feed-main"><form className="composer glass-card new-composer" onSubmit={publish}><div className="composer-top"><PostAvatar person={profile} /><textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder={t.compose} maxLength={5000} aria-label={t.compose} /></div>
-      <div className="composer-kinds"><button type="button" className={kind === 'article' ? 'selected' : ''} onClick={() => { setKind('article'); setFile(null) }}>Text</button><button type="button" className={kind === 'discussion' ? 'selected' : ''} onClick={() => { setKind('discussion'); setFile(null) }}>{t.discussion}</button><button type="button" className={kind === 'poll' ? 'selected' : ''} onClick={() => { setKind('poll'); setFile(null) }}><BarChart3 size={15} /> {t.poll}</button></div>
+      <div className="composer-kinds"><button type="button" className={kind === 'discussion' ? 'selected' : ''} onClick={() => { setKind('discussion'); setFile(null) }}>{t.discussion}</button><button type="button" className={kind === 'poll' ? 'selected' : ''} onClick={() => { setKind('poll'); setFile(null) }}><BarChart3 size={15} /> {t.poll}</button></div>
       {kind === 'poll' && <div className="poll-inputs">{options.map((option,index) => <input key={index} value={option} maxLength={140} onChange={(event) => setOptions((old) => old.map((item,i) => i === index ? event.target.value : item))} placeholder={`Option ${index + 1}`} aria-label={`Poll option ${index + 1}`} />)}{options.length < 8 && <button type="button" onClick={() => setOptions([...options,''])}>+ Add option</button>}</div>}
-      {preview && <div className="upload-preview">{file?.type.startsWith('image/') ? <img src={preview} alt="Preview" /> : file?.type.startsWith('video/') ? <video src={preview} controls /> : <audio src={preview} controls />}<button className="secondary-button" type="button" onClick={() => { setFile(null); setKind('article') }}>Remove</button></div>}
+      {preview && <div className="upload-preview">{file?.type.startsWith('image/') ? <img src={preview} alt="Preview" /> : file?.type.startsWith('video/') ? <video src={preview} controls /> : <audio src={preview} controls />}<button className="secondary-button" type="button" onClick={() => { setFile(null); setKind('discussion') }}>Remove</button></div>}
       <div className="composer-context"><label>{t.topic}<select value={topic} onChange={(event) => setTopic(event.target.value)}><option value="">All topics</option>{topics.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>{t.linkedProject}<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">{t.noProject}</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div>
       <div className="composer-actions"><div><label className="composer-upload"><ImageIcon size={16} /> {t.image}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseFile} hidden /></label><label className="composer-upload"><Video size={16} /> {t.video}<input type="file" accept="video/mp4,video/webm" onChange={chooseFile} hidden /></label><label className="composer-upload"><AudioLines size={16} /> {t.audio}<input type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4" onChange={chooseFile} hidden /></label></div><button className="primary-button small" disabled={busy || !content.trim()}><Send size={15} /> {busy ? t.publishing : t.publish}</button></div>
       {error && <p className="form-message error" role="alert">{error}</p>}
@@ -174,7 +174,7 @@ export default function FeedPage() {
     </form>
     <div className="content-tabs topic-filters"><button className={!filter ? 'active' : ''} onClick={() => setSearchParams({})}>{t.forYou}</button>{topics.map(([key,label]) => <button key={key} className={filter === key ? 'active' : ''} onClick={() => setSearchParams({ topic:key })}>{label}</button>)}</div>
     {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />)}</div>
-    <aside className="feed-right"><section className="glass-card side-widget"><h3>{t.rights}</h3><p>{t.rightsText}</p></section><section className="glass-card side-widget"><h3>{t.demo}</h3><p>{language === 'vi' ? 'Xem ví dụ về Thế giới, Dự án, bài viết và khóa học. Đây là nội dung minh họa, không nằm trong dữ liệu thật.' : 'Explore a fictional world, project, posts and course. The example is separate from real user data.'}</p><Link className="secondary-button" to="/demo">{t.demo}</Link></section></aside></div>
+    </div>
   </div>
 }
 

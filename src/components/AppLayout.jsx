@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Bell, BookOpen, BriefcaseBusiness, Compass, Globe2, LogOut, MessageCircle, Search, Settings, UserRound, UsersRound } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
@@ -25,12 +25,28 @@ export default function AppLayout() {
   const { t } = useLanguage()
   const navigate = useNavigate()
   const [accountOpen, setAccountOpen] = useState(false)
+  const [headerState, setHeaderState] = useState('top')
+
+  useEffect(() => {
+    let idleTimer
+    const onScroll = () => {
+      window.clearTimeout(idleTimer)
+      if (window.scrollY <= 30) { setHeaderState('top'); return }
+      setHeaderState('scrolling')
+      idleTimer = window.setTimeout(() => {
+        if (!accountOpen && !document.querySelector('.site-header:focus-within')) setHeaderState('idle')
+      }, 1400)
+    }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    onScroll()
+    return () => { window.clearTimeout(idleTimer); window.removeEventListener('scroll', onScroll) }
+  }, [accountOpen])
 
   function go(path) { setAccountOpen(false); navigate(path) }
 
   return <div className="app-shell">
     <span className="aurora app-a" /><span className="aurora app-b" />
-    <header className="site-header glass-panel">
+    <header className={`site-header glass-panel header-${accountOpen ? 'open' : headerState}`}>
       <div className="site-header-primary">
         <NavLink className="header-brand" to="/feed" aria-label="Mora · Bảng tin"><Brand /><small>by Mour Studio</small></NavLink>
         <button className="search-box" onClick={() => go('/search')}><Search size={17} /><span>{t.search}</span><kbd>⌘ K</kbd></button>
