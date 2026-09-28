@@ -8,6 +8,7 @@ import { useAuth } from '../context/AuthContext'
 import { getLocalProject, listLocalProjects, putLocalProject, readImage } from '../lib/localProjects'
 import { publicStorageUrl, supabase } from '../lib/supabase'
 import { clearInvite } from '../lib/pendingInvite'
+import { worldToLocalProject } from '../lib/legacyWorlds'
 
 const kinds = { overview: 'Tổng quan', story: 'Cốt truyện', character: 'Nhân vật', land: 'Vùng đất', skill: 'Kỹ năng', reference: 'Hình tham chiếu', palette: 'Bảng màu', material: 'Chất liệu', document: 'Tài liệu', custom: 'Mục tùy chỉnh' }
 const createDraft = (name, projectType, local) => ({ id: `local-${crypto.randomUUID()}`, local, name, project_type: projectType, summary: '', description: '', stage: 'Idea', language: 'Vietnamese', visibility: 'private', status: 'draft', looking_for: [], contact_open: false, allow_copy: true, allow_export: false, sections: [], nodes: [], links: [], events: [] })
@@ -37,6 +38,8 @@ export function MyProjectsPage() {
   const navigate = useNavigate()
   const [projects, setProjects] = useState([])
   const [locals, setLocals] = useState([])
+  const [legacyWorlds, setLegacyWorlds] = useState([])
+  const [legacyError, setLegacyError] = useState('')
   const [newName, setNewName] = useState('')
   const [newType, setNewType] = useState('Game')
   const [busy, setBusy] = useState(false)
@@ -57,6 +60,29 @@ export function MyProjectsPage() {
     setProjects([...data, ...invited.filter((item) => !data.some((owned) => owned.id === item.id))]); setLocals(drafts.filter((item) => item.owner_id === user.id).sort((a, b) => (b.updated_at || '').localeCompare(a.updated_at || '')))
   }, [user.id])
   useEffect(() => { load().catch((caught) => setError(caught.message)) }, [load])
+  useEffect(() => {
+    let active = true
+    supabase.from('worlds').select('id,name,description,world_type,genre,language,reference_images').eq('owner_id', user.id).order('updated_at', { ascending: false }).then(({ data, error: queryError }) => {
+      if (!active) return
+      if (queryError) setLegacyError(queryError.message)
+      else setLegacyWorlds(data || [])
+    })
+    return () => { active = false }
+  }, [user.id])
+
+  async function copyWorld(world) {
+    setBusy(true); setLegacyError('')
+    try {
+      const tables = [['characters', 'characters'], ['locations', 'locations'], ['factions', 'factions'], ['items', 'items'], ['world_events', 'events']]
+      const results = await Promise.all(tables.map(([table]) => supabase.from(table).select('*').eq('world_id', world.id).eq('owner_id', user.id)))
+      const failed = results.find((result) => result.error)
+      if (failed) throw failed.error
+      const related = Object.fromEntries(tables.map(([, key], index) => [key, results[index].data || []]))
+      const draft = worldToLocalProject(world, related, user.id)
+      await putLocalProject(draft)
+      navigate(`/studio/projects/${draft.id}`)
+    } catch (caught) { setLegacyError(`Không thể sao chép Thế giới cũ: ${caught.message}`); setBusy(false) }
+  }
 
   async function create(event, local) {
     event.preventDefault(); if (!newName.trim()) return
@@ -85,10 +111,12 @@ export function MyProjectsPage() {
     event.target.value = ''
   }
 
-  return <div className="content-page project-workspace"><div className="page-hero simple"><div><span className="eyebrow purple"><span /> MORA STUDIO</span><h1>Dự án của bạn</h1><p>Đăng bài trên Feed không tạo dự án. Chỉ dự án bạn chủ động xuất bản mới vào khu vực Khám phá.</p></div></div>
+  return <div className="content-page project-workspace"><div className="page-hero simple"><div><span className="eyebrow purple"><span /> MORA STUDIO</span><h1>Dự án của bạn</h1><p>Nhân vật, vùng đất, lore và sự kiện cùng ở một dự án. Bài đăng trên Feed không tự tạo hay công khai dự án.</p></div><Link className="secondary-button" to="/demo">Xem nhóm Mabi minh họa ↗</Link></div>
     <form className="glass-card project-create" onSubmit={(event) => create(event, false)}><h2>Tạo dự án</h2><p>Chọn lưu chỉ trên thiết bị này hoặc đồng bộ lên Mora để sau đó mời cộng tác.</p><div className="project-create-row"><input required maxLength="120" value={newName} placeholder="Tên dự án" onChange={(event) => setNewName(event.target.value)} /><select value={newType} onChange={(event) => setNewType(event.target.value)}>{['Game','Novel','Comic','RPG','Animation','Visual Novel'].map((type) => <option key={type}>{type}</option>)}</select><button type="button" className="secondary-button" disabled={busy} onClick={(event) => create(event, true)}><LockKeyhole size={15} /> Lưu trên máy</button><button className="primary-button" disabled={busy}><Upload size={15} /> Tạo trên Mora</button></div>{error && <p className="form-message error">{error}</p>}</form>
     <section className="section-block"><div className="section-title"><h2>Trên thiết bị này</h2><p>Chưa ai khác xem được; xóa dữ liệu trình duyệt có thể làm mất bản nháp. Hãy xuất tệp để lưu dự phòng.</p></div><label className="secondary-button backup-import"><Upload size={15} /> Nhập bản sao lưu JSON<input type="file" accept=".json,application/json" onChange={importBackup} hidden /></label>{!locals.length ? <p className="inline-empty">Chưa có bản nháp trên thiết bị.</p> : <div className="project-grid">{locals.map((item) => <Link className="project-card glass-card project-list-card" to={`/studio/projects/${item.id}`} key={item.id}><LockKeyhole /><h3>{item.name}</h3><p>{item.project_type} · Chỉ trên máy</p></Link>)}</div>}</section>
     <section className="section-block"><div className="section-title"><h2>Đã đồng bộ lên Mora</h2></div>{!projects.length ? <EmptyState title="Chưa có dự án được đồng bộ" description="Tạo trên Mora hoặc đồng bộ một bản nháp từ thiết bị này để mời người khác." /> : <div className="project-grid">{projects.map((item) => <Link className="project-card glass-card project-list-card" to={`/studio/projects/${item.id}`} key={item.id}><BriefcaseBusiness /><h3>{item.name}</h3><p>{item.project_type} · {item.owner_id === user.id ? 'Của bạn' : 'Được mời'} · {item.status === 'published' ? 'Đã công khai' : 'Riêng tư'}</p></Link>)}</div>}</section>
+    {legacyError && <p role="alert" className="form-message error">{legacyError}</p>}
+    {!!legacyWorlds.length && <section className="section-block"><div className="section-title"><div><h2>Thế giới đã tạo trước đây</h2><p>Sao chép lore và nhân vật thành dự án riêng trên thiết bị. Dữ liệu gốc vẫn được giữ; ảnh cũ cần chọn và gắn lại trước khi chia sẻ.</p></div><Link className="secondary-button" to="/studio/legacy-worlds">Xem lưu trữ cũ</Link></div><div className="project-grid">{legacyWorlds.map((world) => { const copied = locals.some((item) => item.source_world_id === world.id); return <article className="project-card glass-card project-list-card" key={world.id}><Globe2 /><h3>{world.name}</h3><p>{world.world_type === 'game' ? 'Game' : 'Truyện'} · Bản gốc</p><button className="secondary-button" type="button" disabled={busy || copied} onClick={() => copyWorld(world)}>{copied ? 'Đã sao chép trên máy' : 'Sao chép thành dự án'}</button></article> })}</div></section>}
   </div>
 }
 
