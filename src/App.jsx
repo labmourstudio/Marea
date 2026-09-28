@@ -48,7 +48,8 @@ export default function App() {
         <Route path="/studio/projects/:projectId" element={<LocalProjectGuard><ProjectStudioPage localOnly /></LocalProjectGuard>} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        <Route path="/demo" element={<DemoPage />} />
+        <Route path="/community" element={<DemoPage />} />
+        <Route path="/demo" element={<Navigate to="/community" replace />} />
       </Route>
       <Route element={<AdminRoute />}>
         <Route path="/admin" element={<AdminPage />} />

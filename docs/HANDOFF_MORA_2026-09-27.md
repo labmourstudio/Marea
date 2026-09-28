@@ -22,8 +22,10 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 | Like, bình luận, sao chép/chia sẻ, lưu bài | Code dùng reactions/comments hiện tại; lưu bài chỉ ở localStorage trên thiết bị | Cần test với hai tài khoản thật. |
 | Bình chọn thật | **Chưa có trên Supabase live** | SQL `supabase/migrations/202609270001_mora_social_posts.sql` tạo options, votes, RLS, RPC kết quả. Trước khi chạy, UI báo thiếu migration và không đăng dữ liệu sai. |
 | Video / âm thanh thật | **Chưa có trên Supabase live** | SQL mới tạo bucket công khai `post-media` (40 MB, MIME whitelist) và RLS theo owner. Trước khi chạy, UI báo thiếu migration. Tuyệt đối không giới thiệu là đã có audio thật trên Feed live. |
-| Demo nhóm Mabi / Morimori | Có, chỉ tại `/demo` sau khi đăng nhập | Mabi và ba cộng sự, số theo dõi giả định, trạng thái bạn bè giả định, dự án nhóm, bài đăng và khóa học được đánh dấu **DEMO**, render trong React và không ghi Supabase. Bài bình chọn, quyền và lựa chọn công khai chỉ đổi state ở trang demo. File audio người dùng chọn chỉ tạo object URL cục bộ. |
+| Tình huống Mabi / Morimori | Có tại Feed, Friends, Projects, Learn; xem chi tiết ở `/community` (`/demo` chuyển về đây) | Bốn người, số theo dõi, dự án, bài đăng và khóa học là **mẫu được gắn nhãn**, lưu trong `src/data/sampleCommunity.js`, không tạo bản ghi Supabase. Tương tác mẫu chỉ đổi state trong phiên; không tạo bạn bè hay bình chọn thật. File audio người dùng chọn chỉ tạo object URL cục bộ. |
 | Dự án cá nhân hiện tại | Tạo/sửa bản nháp **trên thiết bị**, IndexedDB; JSON backup, canvas, PDF | Không dùng một link để chia sẻ bản nháp này. Không nhầm với public Projects hay dữ liệu được Supabase bảo vệ. |
+| Truyện và Game Design | Có trên bản nháp thiết bị | Truyện: lore, cốt truyện, nhân vật, địa điểm. Game: gameplay, tướng, kỹ năng, tiền tệ, vật phẩm, dòng skin, sự kiện và quan hệ/chi phí. Các mục game dùng `project_sections` có `section_type='custom'` và `content.category`, tránh đổi enum trong schema cũ. Ảnh canvas và phác thảo vẫn tự lưu trên máy. |
+| Sự kiện tham chiếu game gốc | Có giới hạn trên cùng thiết bị và cùng tài khoản | Tạo loại `Game Event`, chọn game gốc, chọn tướng và tiền tệ được tham chiếu; thêm cốt truyện sự kiện, dòng skin và chi phí. Khi mở game gốc trên máy đó, mục Quan hệ & chi phí tóm tắt dòng skin, giá trong game, dự toán của sự kiện. Đây **không phải** lời mời/đồng bộ hoặc kiểm tra quyền server giữa hai tài khoản. Tải JSON riêng lẻ chưa đóng gói các bản nháp liên quan. |
 | Gộp Thế giới và Dự án trên giao diện | Có, không xóa dữ liệu cũ | Nav không còn mục Thế giới riêng; `/worlds` chuyển tới `/studio/projects`. Chủ tài khoản có thể **sao chép** các records `worlds`, `characters`, `locations`, `factions`, `items`, `world_events` cũ sang bản dự án riêng trên máy; ảnh phải chọn/gắn lại. Bản gốc vẫn ở Supabase, đọc được ở `/studio/legacy-worlds`. Dữ liệu chỉ lưu ở máy không tự được mời/công khai. |
 | Dự án cộng tác và xuất bản có kiểm soát | Mã ở PR #2, **chưa lên live** | Cần chạy migration `202609260001_mora_project_space.sql`, kiểm tra RLS, lời mời/thu hồi, ảnh riêng, owner/editor/viewer, đồng bộ và công khai trước merge. |
 
@@ -31,16 +33,18 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 
 - **Dự án cá nhân**: một hồ sơ có cấu trúc cho game/truyện/comic, bao gồm bối cảnh/lore, nhân vật, vùng đất, nhóm và tài liệu. Dự án mới là riêng tư trên thiết bị. Dữ liệu `worlds` Supabase trước đây vẫn nguyên vẹn; nút sao chép tạo **bản mới** ở dự án local, không thay đổi dữ liệu cũ và không tự chuyển ảnh. Mục **Khám phá dự án** chỉ hiển thị dự án `published` và `public/showcase`.
 - **Feed**: bài độc lập, không phải dự án; tác giả hoặc người xem có thể tự chọn gắn một bài công khai với một dự án công khai. Trang hoạt động của dự án liệt kê các bài *có liên kết thực sự*, giúp tác giả tìm đóng góp thuận tiện.
-- `/demo` mô phỏng Mabi và ba người bạn cùng xây dựng Morimori; người xem đổi vai trò thử, chọn phần giới thiệu công khai, đọc bài Feed từng người, thử thích/bình chọn/bình luận. Không coi tên, lượt theo dõi, lore, khóa học, bài, lời mời hay quan hệ bạn bè mẫu là người dùng và dữ liệu thật.
+- Các thẻ được gắn nhãn mẫu trong Feed, Friends, Projects, Learn dẫn tới `/community` để xem nhóm Morimori. Người xem đổi vai trò thử, chọn phần giới thiệu công khai, đọc bài từng người, thử thích/bình chọn/bình luận. Không coi tên, lượt theo dõi, lore, khóa học, bài, lời mời hay quan hệ bạn bè mẫu là người dùng và dữ liệu thật.
+- **Legacy of Mour chỉ là tài liệu tham khảo để hiểu cấu trúc game. Không chỉnh mã, không nhập danh sách tướng từ Legacy vào Mora và không thay đổi repository Legacy.**
 
 ## Mã cần biết
 
 - `src/context/LanguageContext.jsx`: locale, từ điển và lựa chọn đầu tiên. `src/components/LanguageWelcome.jsx`: chọn lúc vào site; `src/pages/SettingsPage.jsx`: đổi sau này.
 - `src/context/ThemeContext.jsx` và phần cuối `src/styles.css`: token màu và dark mode, hiệu ứng kính mờ; `src/context/SiteSettingsContext.jsx`: cài đặt diện mạo chung từ Supabase.
-- `src/pages/FeedPage.jsx`: đăng bài, upload, bài gắn dự án, comment/poll, hoạt động dự án. `src/pages/DemoPage.jsx`: ví dụ riêng, không gửi DB.
+- `src/pages/FeedPage.jsx`: đăng bài, upload, bài gắn dự án, comment/poll, hoạt động dự án. `src/data/sampleCommunity.js`, `src/components/CommunityPreview.jsx`, `src/pages/DemoPage.jsx`: tình huống mẫu tích hợp và trang xem sâu, không gửi DB.
 - `src/pages/LocalProjectsPage.jsx`, `src/lib/legacyWorlds.js`, `src/pages/ProjectPages.jsx`, `src/lib/localProjects.js`, `src/components/ProjectCanvas.jsx`: bản nháp thiết bị và thao tác sao chép Thế giới cũ.
+- `src/lib/projectWorkflows.js`: sơ đồ tab Truyện/Game/Sự kiện và ánh xạ `content.category`. `src/components/GameDesignPanel.jsx`, `src/lib/gameEconomy.js`: tài nguyên, dòng skin, tham chiếu sự kiện cùng máy, giá trong game và ngân sách sản xuất tách riêng.
 - `supabase/migrations/202609270001_mora_social_posts.sql`: migration Feed mới; **không seed dữ liệu**. Migration cloud của PR #2 độc lập với Feed; cần kiểm tra thứ tự áp dụng dựa trên schema thật trước khi chạy.
-- `src/App.jsx`: tuyến `/settings`, `/demo`, `/projects/:projectId/activity`; Auth guard cho các tuyến riêng.
+- `src/App.jsx`: tuyến `/settings`, `/community` (`/demo` chuyển về đây), `/projects/:projectId/activity`; Auth guard cho các tuyến riêng.
 
 ## Đưa lên môi trường thật một cách an toàn
 
@@ -55,6 +59,7 @@ Tài liệu này dành cho chat hoặc lập trình viên tiếp nối công vi�
 - Hoàn chỉnh bản dịch mọi trang còn hardcode tiếng Việt; hiện 11 locale là phần giao diện cốt lõi, chưa phải toàn website hoàn chỉnh.
 - Test và khắc phục lỗi thật của Feed sau migration, phân trang, hạn chế spam và duyệt ảnh/video. Poll nên chốt thời hạn, không cho sửa lựa chọn sau khi vote; theo dõi storage quota gói miễn phí.
 - Khi PR #2 đã có migration và kiểm chứng RLS/media, nối dự án local lên cloud với thao tác chủ động của chủ dự án, thêm project inbox cho bài liên kết và thông báo. Không phát hành giả định việc mời cộng tác vào bản nháp chỉ lưu trên thiết bị.
+- Nếu muốn sự kiện do người khác làm, cần bảng quan hệ sự kiện↔game trên Supabase, quyền theo từng tướng/tiền tệ, xác thực lời mời, kiểm tra RLS cả lúc cấp và thu hồi quyền, cập nhật game gốc, giải quyết xung đột và cơ chế sao lưu nhóm; không sao chép logic liên kết IndexedDB rồi tuyên bố đó là quyền thật.
 - Khóa học ví dụ cần nội dung và quyền Course Creator thật trước khi đăng. Hiện `/demo` chỉ giúp đánh giá bố cục, không tự gán khóa học vào chủ tài khoản.
 
 ## Kiểm tra nhanh
