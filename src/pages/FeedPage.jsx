@@ -162,7 +162,7 @@ export default function FeedPage() {
     } finally { setBusy(false) }
   }
 
-  return <div className="content-page"><section className="welcome-row"><div><span className="eyebrow purple">MORA · CREATE & CONNECT</span><h1>{t.welcomeBack}, {profile?.display_name || profile?.username}</h1><p>{t.feedIntro}</p></div></section>
+  return <div className="content-page"><section className="welcome-row"><div><span className="eyebrow purple">MORA · CREATE & CONNECT</span><h1>{t.welcomeBack}, {profile?.display_name || profile?.username}</h1><p>{t.feedIntro}</p></div><Link className="secondary-button" to="/demo">{language === 'vi' ? 'Xem nhóm Mabi minh họa' : 'Explore the Mabi example'}</Link></section>
     <div className="feed-layout"><div className="feed-main"><form className="composer glass-card new-composer" onSubmit={publish}><div className="composer-top"><PostAvatar person={profile} /><textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder={t.compose} maxLength={5000} aria-label={t.compose} /></div>
       <div className="composer-kinds"><button type="button" className={kind === 'discussion' ? 'selected' : ''} onClick={() => { setKind('discussion'); setFile(null) }}>{t.discussion}</button><button type="button" className={kind === 'poll' ? 'selected' : ''} onClick={() => { setKind('poll'); setFile(null) }}><BarChart3 size={15} /> {t.poll}</button></div>
       {kind === 'poll' && <div className="poll-inputs">{options.map((option,index) => <input key={index} value={option} maxLength={140} onChange={(event) => setOptions((old) => old.map((item,i) => i === index ? event.target.value : item))} placeholder={`Option ${index + 1}`} aria-label={`Poll option ${index + 1}`} />)}{options.length < 8 && <button type="button" onClick={() => setOptions([...options,''])}>+ Add option</button>}</div>}
@@ -173,7 +173,7 @@ export default function FeedPage() {
       <p className="composer-note">{language === 'vi' ? 'Bài đăng công khai. Chỉ chọn dự án đã công bố; đăng bài không tự tạo dự án.' : 'Posts are public. You can link a published project; posting never creates a project.'}</p>
     </form>
     <div className="content-tabs topic-filters"><button className={!filter ? 'active' : ''} onClick={() => setSearchParams({})}>{t.forYou}</button>{topics.map(([key,label]) => <button key={key} className={filter === key ? 'active' : ''} onClick={() => setSearchParams({ topic:key })}>{label}</button>)}</div>
-    {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />)}</div>
+    {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} action={<Link className="secondary-button" to="/demo">{language === 'vi' ? 'Xem bốn hồ sơ và bài mẫu (demo)' : 'View four fictional creator profiles'}</Link>} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />)}</div>
     </div>
   </div>
 }

@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BriefcaseBusiness, LockKeyhole, Plus, Upload } from 'lucide-react'
+import { BriefcaseBusiness, Globe2, LockKeyhole, Plus, Upload } from 'lucide-react'
 import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { listLocalProjects, putLocalProject } from '../lib/localProjects'
+import { worldToLocalProject } from '../lib/legacyWorlds'
+import { supabase } from '../lib/supabase'
 import { EmptyState, LoadingState } from '../components/StateView'
 
 const projectTypes = ['Game', 'Novel', 'Comic', 'RPG', 'Animation', 'Visual Novel']
@@ -11,6 +13,8 @@ export default function LocalProjectsPage() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const [projects, setProjects] = useState(null)
+  const [worlds, setWorlds] = useState([])
+  const [worldError, setWorldError] = useState('')
   const [name, setName] = useState('')
   const [type, setType] = useState('Game')
   const [busy, setBusy] = useState(false)
@@ -23,6 +27,29 @@ export default function LocalProjectsPage() {
     } catch (caught) { setError(`Không mở được bản nháp trên thiết bị này: ${caught.message}`); setProjects([]) }
   }, [user.id])
   useEffect(() => { load() }, [load])
+  useEffect(() => {
+    let active = true
+    supabase.from('worlds').select('id,name,description,world_type,genre,language,reference_images').eq('owner_id', user.id).order('updated_at', { ascending: false }).then(({ data, error: fetchError }) => {
+      if (!active) return
+      if (fetchError) setWorldError(fetchError.message)
+      else setWorlds(data || [])
+    })
+    return () => { active = false }
+  }, [user.id])
+
+  async function copyWorld(world) {
+    setBusy(true); setError('')
+    try {
+      const tables = [['characters','characters'],['locations','locations'],['factions','factions'],['items','items'],['world_events','events']]
+      const results = await Promise.all(tables.map(([table]) => supabase.from(table).select('*').eq('world_id', world.id).eq('owner_id', user.id)))
+      const failed = results.find((result) => result.error)
+      if (failed) throw failed.error
+      const related = Object.fromEntries(tables.map(([,key], index) => [key, results[index].data || []]))
+      const draft = worldToLocalProject(world, related, user.id)
+      await putLocalProject(draft)
+      navigate(`/studio/projects/${draft.id}`)
+    } catch (caught) { setError(`Không thể sao chép thế giới: ${caught.message}`); setBusy(false) }
+  }
 
   async function create(event) {
     event.preventDefault()
@@ -52,9 +79,11 @@ export default function LocalProjectsPage() {
 
   return <div className="content-page project-workspace">
     <Link className="project-back" to="/studio">← Không gian của tôi</Link>
-    <section className="page-hero simple"><div><span className="eyebrow purple"><span /> MORA STUDIO</span><h1>Dự án cá nhân</h1><p>Tạo và chỉnh sửa câu chuyện, nhân vật, vùng đất, sự kiện trong bản nháp riêng. Đây là khu làm việc của bạn; khu Khám phá dự án chỉ hiển thị những dự án được chủ sở hữu công bố.</p></div></section>
+    <section className="page-hero simple"><div><span className="eyebrow purple"><span /> MORA STUDIO</span><h1>Dự án của tôi</h1><p>Mỗi dự án có thể chứa cốt truyện, nhân vật, vùng đất và sự kiện trong cùng một nơi. Bản nháp lưu trên thiết bị; khu Khám phá chỉ hiện dự án chủ sở hữu đã công bố.</p></div><Link className="secondary-button" to="/demo">Xem nhóm Mabi minh họa ↗</Link></section>
     <form className="glass-card project-create" onSubmit={create}><h2>Tạo bản nháp dự án</h2><p>Bản này tự lưu trên trình duyệt đang dùng. Người khác chưa thể truy cập, kể cả khi có liên kết. Hãy tải bản sao lưu trước khi đổi thiết bị hoặc xóa dữ liệu trình duyệt.</p><div className="project-create-row"><input aria-label="Tên dự án" maxLength="120" required placeholder="Tên dự án" value={name} onChange={(event) => setName(event.target.value)} /><select aria-label="Loại dự án" value={type} onChange={(event) => setType(event.target.value)}>{projectTypes.map((item) => <option key={item}>{item}</option>)}</select><button className="primary-button" disabled={busy}><Plus size={17} /> {busy ? 'Đang tạo…' : 'Tạo trên thiết bị'}</button></div></form>
     <section className="section-block"><div className="section-title"><div><h2>Bản nháp của bạn</h2><p>Chỉ lưu trên thiết bị này · chưa công khai</p></div></div><label className="secondary-button backup-import"><Upload size={16} /> Nhập bản sao lưu JSON<input type="file" accept=".json,application/json" onChange={importBackup} hidden /></label>{error && <p role="alert" className="form-message error">{error}</p>}{projects === null ? <LoadingState /> : projects.length ? <div className="project-grid">{projects.map((item) => <Link className="project-card glass-card project-list-card" to={`/studio/projects/${item.id}`} key={item.id}><LockKeyhole /><h3>{item.name}</h3><p>{item.project_type} · Chỉnh sửa bản nháp</p><small>Lưu lần cuối: {item.updated_at ? new Date(item.updated_at).toLocaleString('vi-VN') : 'Chưa rõ'}</small></Link>)}</div> : <EmptyState title="Chưa có bản nháp trên thiết bị này" description="Tạo dự án để bắt đầu xây dựng nhân vật, vùng đất và nội dung của riêng bạn." />}</section>
+    {worldError && <p role="alert" className="form-message error">Không mở được dữ liệu Thế giới cũ: {worldError}</p>}
+    {!!worlds.length && <section className="section-block"><div className="section-title"><div><h2>Nội dung Thế giới đã tạo trước đây</h2><p>Sao chép vào Dự án của tôi. Dữ liệu gốc vẫn ở Supabase; ảnh cũ cần chọn và gắn lại để không vô tình tải nội dung riêng tư lên bản công khai.</p></div><Link className="secondary-button" to="/studio/legacy-worlds">Xem lưu trữ cũ</Link></div><div className="project-grid">{worlds.map((world) => { const copied = projects?.some((item) => item.source_world_id === world.id); return <article className="project-card glass-card project-list-card" key={world.id}><Globe2 /><h3>{world.name}</h3><p>{world.world_type === 'game' ? 'Game' : 'Truyện'} · Dữ liệu Thế giới cũ</p><button className="secondary-button" type="button" disabled={busy || copied} onClick={() => copyWorld(world)}>{copied ? 'Đã sao chép trên máy' : 'Sao chép thành dự án'}</button></article> })}</div></section>}
     <section className="glass-card project-panel"><BriefcaseBusiness color="var(--purple)" /><h2>Cộng tác và công khai</h2><p>Liên kết mời, đồng bộ và trang dự án công khai cần không gian lưu trữ riêng trên Supabase. Phần này sẽ được mở khi cơ sở dữ liệu Mora hoàn tất. Nội dung bạn tạo tại đây chưa được tự tải lên.</p></section>
   </div>
 }
