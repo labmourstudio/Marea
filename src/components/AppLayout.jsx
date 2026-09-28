@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { Bell, BookOpen, BriefcaseBusiness, Compass, Globe2, LogOut, MessageCircle, Search, Settings, UserRound, UsersRound } from 'lucide-react'
+import { Bell, BookOpen, BriefcaseBusiness, Compass, LogOut, MessageCircle, Search, Settings, UserRound, UsersRound } from 'lucide-react'
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -9,7 +9,6 @@ import Brand from './Brand'
 const navItems = [
   ['/feed', 'feed', Compass],
   ['/friends', 'friends', UsersRound],
-  ['/worlds', 'worlds', Globe2],
   ['/projects', 'projects', BriefcaseBusiness],
   ['/learn', 'learn', BookOpen],
   ['/studio', 'studio', Settings],

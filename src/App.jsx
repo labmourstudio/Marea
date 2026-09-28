@@ -37,13 +37,14 @@ export default function App() {
       <Route element={<AppLayout />}>
         <Route path="/feed" element={<FeedPage />} />
         <Route path="/friends" element={<FriendsPage />} />
-        <Route path="/worlds" element={<WorldsPage />} />
+        <Route path="/worlds" element={<Navigate to="/studio/projects" replace />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/studio" element={<StudioPage />} />
         <Route path="/studio/projects" element={<LocalProjectsPage />} />
+        <Route path="/studio/legacy-worlds" element={<WorldsPage archiveOnly />} />
         <Route path="/studio/projects/:projectId" element={<LocalProjectGuard><ProjectStudioPage localOnly /></LocalProjectGuard>} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<SettingsPage />} />
