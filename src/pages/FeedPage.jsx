@@ -97,15 +97,19 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => { supabase.from('projects').select('id,name').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(100).then(({ data }) => setProjects(data || [])) }, [])
+  useEffect(() => { supabase.from('project_showcases').select('id,name').order('published_at',{ ascending:false }).limit(100).then(({ data }) => setProjects(data || [])) }, [])
   useEffect(() => { if (!file) { setPreview(''); return undefined } const url = URL.createObjectURL(file); setPreview(url); return () => URL.revokeObjectURL(url) }, [file])
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    let query = supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),project:projects!posts_project_id_fkey(id,name,visibility,status),reactions(id,user_id,kind),comments(id,content,created_at,author:profiles!comments_user_id_fkey(username,display_name))').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(30)
+    let query = supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),reactions(id,user_id,kind),comments(id,content,created_at,author:profiles!comments_user_id_fkey(username,display_name))').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(30)
     if (filter) query = query.contains('hashtags',[filter])
     const result = await query
     if (result.error) { setError(result.error.message); setLoading(false); return }
-    setPosts(result.data || [])
+    const linkedIds = [...new Set((result.data || []).map((item) => item.project_id).filter(Boolean))]
+    const linked = linkedIds.length ? await supabase.from('project_showcases').select('id,name').in('id',linkedIds) : { data:[] }
+    if (linked.error) { setError(linked.error.message); setLoading(false); return }
+    const names = new Map((linked.data || []).map((project) => [project.id,project]))
+    setPosts((result.data || []).map((post) => ({ ...post,project:names.has(post.project_id) ? { ...names.get(post.project_id),status:'published',visibility:'public' } : null })))
     const ids = (result.data || []).filter((item) => item.content_type === 'poll').map((item) => item.id)
     if (ids.length) {
       const [opts, own] = await Promise.all([supabase.from('post_poll_options').select('id,post_id,label,position').in('post_id',ids).order('position'),supabase.from('post_poll_votes').select('post_id,option_id').eq('user_id',user.id).in('post_id',ids)])
@@ -136,7 +140,7 @@ export default function FeedPage() {
     let uploaded = null; let createdId = null
     try {
       if (kind === 'poll') { const check = await supabase.from('post_poll_options').select('id').limit(1); if (check.error) throw new Error('Polls require the pending Supabase migration before they can be published.') }
-      if (projectId) { const { data, error: projectError } = await supabase.from('projects').select('id').eq('id',projectId).eq('status','published').in('visibility',['public','showcase']).maybeSingle(); if (projectError || !data) throw new Error('The linked project is no longer public. Select another project.') }
+      if (projectId) { const { data, error: projectError } = await supabase.from('project_showcases').select('id').eq('id',projectId).maybeSingle(); if (projectError || !data) throw new Error('The linked project is no longer public. Select another project.') }
       let mediaPaths = []
       if (file) {
         const bucket = file.type.startsWith('image/') ? 'project-media' : 'post-media'
@@ -180,20 +184,35 @@ export default function FeedPage() {
 
 export function ProjectActivityPage() {
   const { projectId } = useParams()
+  const { user } = useAuth()
   const [project,setProject] = useState(null)
   const [posts,setPosts] = useState([])
+  const [polls,setPolls] = useState({})
   const [loading,setLoading] = useState(true)
   const [error,setError] = useState('')
   const load = useCallback(async () => {
-    setLoading(true)
+    setLoading(true); setError('')
     const [one,linked] = await Promise.all([
-      supabase.from('projects').select('id,name,summary,owner:profiles!projects_owner_id_fkey(username,display_name)').eq('id',projectId).eq('status','published').in('visibility',['public','showcase']).maybeSingle(),
-      supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),project:projects!posts_project_id_fkey(id,name,visibility,status),reactions(id,user_id,kind),comments(id,content,author:profiles!comments_user_id_fkey(username,display_name))').eq('project_id',projectId).eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(60),
+      supabase.from('project_showcases').select('id,name,summary,owner_username,owner_display_name').eq('id',projectId).maybeSingle(),
+      supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),reactions(id,user_id,kind),comments(id,content,author:profiles!comments_user_id_fkey(username,display_name))').eq('project_id',projectId).eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(60),
     ])
     if (one.error || linked.error) setError(one.error?.message || linked.error?.message)
-    else { setProject(one.data); setPosts(linked.data || []) }
+    else {
+      setProject(one.data)
+      setPosts((linked.data || []).map((item) => ({ ...item,project:one.data ? { id:one.data.id,name:one.data.name,status:'published',visibility:'public' } : null })))
+      const ids = (linked.data || []).filter((item) => item.content_type === 'poll').map((item) => item.id)
+      if (ids.length) {
+        const [opts, own] = await Promise.all([supabase.from('post_poll_options').select('id,post_id,label,position').in('post_id',ids).order('position'),supabase.from('post_poll_votes').select('post_id,option_id').eq('user_id',user.id).in('post_id',ids)])
+        if (opts.error || own.error) setError(opts.error?.message || own.error?.message)
+        else {
+          const results = await Promise.all(ids.map((id) => supabase.rpc('get_poll_results',{ target_post_id:id })))
+          if (results.some((result) => result.error)) setError(results.find((result) => result.error).error.message)
+          else setPolls(Object.fromEntries(ids.map((id,index) => [id,{ options:(opts.data || []).filter((item) => item.post_id === id), myVote:own.data?.find((item) => item.post_id === id)?.option_id, counts:Object.fromEntries((results[index].data || []).map((item) => [item.option_id,Number(item.votes)])) }])))
+        }
+      } else setPolls({})
+    }
     setLoading(false)
-  },[projectId])
+  },[projectId,user.id])
   useEffect(() => { load() },[load])
-  return <div className="content-page project-activity"><Link to="/projects">← Projects · Dự án</Link>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !project ? <EmptyState title="Project unavailable" description="This project is not public." /> : <><section className="glass-card settings-panel"><span className="eyebrow purple">LINKED POSTS · BÀI VIẾT LIÊN KẾT</span><h1>{project.name}</h1><p>{project.summary}</p><small>By {project.owner?.display_name || project.owner?.username}</small><p>Posts below explicitly link this public project. Private drafts and unlinked mentions never appear here.</p></section><div className="activity-posts">{posts.length ? posts.map((post) => <PostCard key={post.id} post={post} onRefresh={load} />) : <EmptyState title="No linked posts yet" description="Creators can choose this project in the Feed composer to contribute." />}</div></>}</div>
+  return <div className="content-page project-activity"><Link to={`/projects/${projectId}`}>← Project · Dự án</Link>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !project ? <EmptyState title="Project unavailable" description="This project is not public." /> : <><section className="glass-card settings-panel"><span className="eyebrow purple">LINKED POSTS · BÀI VIẾT LIÊN KẾT</span><h1>{project.name}</h1><p>{project.summary}</p><small>By {project.owner_display_name || project.owner_username}</small><p>Posts below explicitly link this public project. Private drafts and unlinked mentions never appear here.</p></section><div className="activity-posts">{posts.length ? posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />) : <EmptyState title="No linked posts yet" description="Creators can choose this project in the Feed composer to contribute." />}</div></>}</div>
 }

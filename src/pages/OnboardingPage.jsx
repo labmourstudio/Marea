@@ -5,6 +5,7 @@ import Brand from '../components/Brand'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { publicStorageUrl, supabase, uploadOwnedImage } from '../lib/supabase'
+import { pendingInvite } from '../lib/pendingInvite'
 
 const roles = ['Writer', 'Game Designer', 'Artist', 'Illustrator', 'Worldbuilder', 'Learner']
 const genres = ['Fantasy', 'Sci-fi', 'Horror', 'Romance', 'RPG', 'MOBA', 'Comic', 'Visual Novel']
@@ -38,7 +39,7 @@ export default function OnboardingPage() {
       if (!form.display_name.trim() || username.length < 3) throw new Error(vi ? 'Tên hiển thị và username từ 3 ký tự là bắt buộc.' : 'A display name and username of at least 3 characters are required.')
       const { error: updateError } = await supabase.from('profiles').update({ ...form, display_name: form.display_name.trim(), username, onboarding_completed: true, updated_at: new Date().toISOString() }).eq('id', user.id)
       if (updateError) throw updateError
-      await refreshProfile(); navigate('/feed', { replace: true })
+      await refreshProfile(); navigate(pendingInvite() || '/feed', { replace: true })
     } catch (saveError) { setError(saveError.message) } finally { setBusy(false) }
   }
 

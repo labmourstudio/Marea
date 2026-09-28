@@ -15,14 +15,15 @@ import FeedPage, { ProjectActivityPage } from './pages/FeedPage'
 import OnboardingPage from './pages/OnboardingPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
 import { AdminPage, AppearanceAdminPage, StudioPage } from './pages/StudioAdminPages'
-import LocalProjectsPage, { LocalProjectGuard } from './pages/LocalProjectsPage'
-import { ProjectStudioPage } from './pages/ProjectPages'
+import { MyProjectsPage, ProjectDetailPage, ProjectInvitePage, ProjectStudioPage } from './pages/ProjectPages'
+import { pendingInvite } from './lib/pendingInvite'
 
 function AuthCallback() {
   const { session, profile, loading } = useAuth()
   const navigate = useNavigate()
   useEffect(() => {
-    if (!loading && session) navigate(profile?.onboarding_completed ? '/feed' : '/onboarding', { replace: true })
+    if (!loading && session) navigate(profile?.onboarding_completed ? pendingInvite() || '/feed' : '/onboarding', { replace: true })
+    if (!loading && !session) navigate('/login', { replace: true })
   }, [loading, navigate, profile, session])
   return <div className="state-view"><p>Đang hoàn tất xác minh…</p></div>
 }
@@ -32,6 +33,7 @@ export default function App() {
     <Route path="/login" element={<AuthPage />} />
     <Route path="/auth/callback" element={<AuthCallback />} />
     <Route path="/reset-password" element={<ResetPasswordPage />} />
+    <Route path="/invite/:token" element={<ProjectInvitePage />} />
     <Route element={<OnboardingGuard />}><Route path="/onboarding" element={<OnboardingPage />} /></Route>
     <Route element={<ProtectedRoute />}>
       <Route element={<AppLayout />}>
@@ -40,12 +42,13 @@ export default function App() {
         <Route path="/worlds" element={<Navigate to="/studio/projects" replace />} />
         <Route path="/projects" element={<ProjectsPage />} />
         <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
+        <Route path="/projects/:projectId" element={<ProjectDetailPage />} />
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/studio" element={<StudioPage />} />
-        <Route path="/studio/projects" element={<LocalProjectsPage />} />
+        <Route path="/studio/projects" element={<MyProjectsPage />} />
         <Route path="/studio/legacy-worlds" element={<WorldsPage archiveOnly />} />
-        <Route path="/studio/projects/:projectId" element={<LocalProjectGuard><ProjectStudioPage localOnly /></LocalProjectGuard>} />
+        <Route path="/studio/projects/:projectId" element={<ProjectStudioPage />} />
         <Route path="/search" element={<SearchPage />} />
         <Route path="/settings" element={<SettingsPage />} />
         <Route path="/demo" element={<DemoPage />} />
