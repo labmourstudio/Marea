@@ -38,6 +38,6 @@ export function sectionForTab(tab, title, sortOrder) {
 
 export function sectionBelongsToTab(section, tab) {
   if (tab === 'lore' || tab === 'gameplay') return section.section_type === 'custom' && section.content?.category === tab
-  if (tab === 'custom') return section.section_type === 'custom' && !['lore', 'gameplay', 'game_currency', 'game_item', 'skin_series', 'game_skin', 'game_event'].includes(section.content?.category)
+  if (tab === 'custom') return section.section_type === 'custom' && !['lore', 'gameplay', 'game_currency', 'game_item', 'skin_series', 'game_skin', 'game_event', 'board_element'].includes(section.content?.category)
   return section.section_type === tab
 }
