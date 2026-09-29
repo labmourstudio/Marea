@@ -14,6 +14,8 @@ test('Story, Game Design and Game Event expose the right project sections', () =
   assert.ok(game.tabs.includes('skins'))
   assert.ok(event.tabs.includes('game_events'))
   assert.ok(!event.tabs.includes('items'))
+  assert.ok(projectWorkflow('Film').tabs.includes('story'))
+  assert.equal(projectWorkflow('Film').labels.events, 'Cảnh quay')
 })
 
 test('lore and game economy entries stay out of generic custom notes', () => {

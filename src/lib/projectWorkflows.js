@@ -12,6 +12,14 @@ const story = {
   labels: { ...sharedLabels, lore: 'Lore truyện', story: 'Cốt truyện', land: 'Địa điểm', events: 'Mốc truyện' },
 }
 
+const film = {
+  ...story,
+  label: 'Không gian Phim ảnh',
+  description: 'Sắp xếp kịch bản, nhân vật, bối cảnh và cảnh quay trong một dự án.',
+  tabs: ['overview', 'story', 'character', 'land', 'reference', 'document', 'custom', 'events', 'share'],
+  labels: { ...sharedLabels, story: 'Kịch bản', land: 'Bối cảnh', events: 'Cảnh quay' },
+}
+
 const game = {
   label: 'Không gian Game Design',
   description: 'Sắp xếp gameplay, bối cảnh, nhân vật, bản đồ và kỹ năng trong một dự án. Chỉ dùng những mục game cần.',
@@ -26,7 +34,7 @@ const gameEvent = {
   tabs: ['overview', 'game_events', 'character', 'currency', 'skins', 'economy', 'story', 'reference', 'document', 'custom', 'share'],
 }
 
-export const projectWorkflow = (type) => type === 'Game Event' ? gameEvent : isGameProject(type) ? game : story
+export const projectWorkflow = (type) => type === 'Game Event' ? gameEvent : isGameProject(type) ? game : ['Film', 'Animation'].includes(type) ? film : story
 
 // Lore and gameplay use the existing custom section type, so older projects and
 // the pending cloud schema can read the same data without adding a SQL enum.
