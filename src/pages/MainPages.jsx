@@ -1,11 +1,11 @@
 import { useCallback, useEffect, useState } from 'react'
-import { BookOpen, Check, Globe2, LockKeyhole, Search, UserPlus } from 'lucide-react'
+import { BookOpen, Globe2, LockKeyhole, Search, UserPlus } from 'lucide-react'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateView'
 import { useAuth } from '../context/AuthContext'
 import { publicStorageUrl, supabase } from '../lib/supabase'
 import { Link } from 'react-router-dom'
 import Brand from '../components/Brand'
-import { FeaturedCourse, FeaturedPeople } from '../components/CommunityPreview'
+import { FeaturedCourse } from '../components/CommunityPreview'
 
 function useLoad(loader, dependencies = []) {
   const [state, setState] = useState({ data: null, loading: true, error: '' })
@@ -25,19 +25,6 @@ function Avatar({ profile, className = 'avatar-md' }) {
 function Visibility({ value }) {
   const labels = { private: 'Riêng tư', unlisted: 'Không công khai', public: 'Công khai', showcase: 'Showcase' }
   return <span className={`visibility visibility-${value}`}>{value === 'private' ? <LockKeyhole /> : <Globe2 />}{labels[value] || value}</span>
-}
-
-export function FriendsPage() {
-  const { user } = useAuth()
-  const friends = useLoad(async () => {
-    const { data, error } = await supabase.from('friendships').select('*, requester:profiles!friendships_requester_id_fkey(id,username,display_name,avatar_path,roles), addressee:profiles!friendships_addressee_id_fkey(id,username,display_name,avatar_path,roles)').or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`).order('created_at', { ascending: false })
-    if (error) throw error
-    return data || []
-  }, [user.id])
-  const accepted = friends.data?.filter((item) => item.status === 'accepted') || []
-  const pending = friends.data?.filter((item) => item.status === 'pending' && item.addressee_id === user.id) || []
-  async function respond(id, status) { await supabase.from('friendships').update({ status, responded_at: new Date().toISOString() }).eq('id', id); friends.reload() }
-  return <div className="content-page"><section className="page-hero simple"><div><span className="eyebrow purple"><span /> CỘNG ĐỒNG</span><h1>Bạn bè</h1><p>Kết nối và cộng tác với những người sáng tạo phù hợp.</p></div></section>{friends.loading ? <LoadingState /> : friends.error ? <ErrorState message={friends.error} retry={friends.reload} /> : <><section className="requests glass-card"><div className="section-title"><h2>Lời mời kết bạn</h2></div>{!pending.length ? <p className="inline-empty">Không có lời mời đang chờ.</p> : pending.map((item) => { const person = item.requester; return <div className="friend-row" key={item.id}><Avatar profile={person} /><div><strong>{person.display_name || person.username}</strong><small>{person.roles?.join(' · ')}</small></div><button className="primary-button small" onClick={() => respond(item.id, 'accepted')}><Check /> Chấp nhận</button><button className="secondary-button" onClick={() => respond(item.id, 'declined')}>Từ chối</button></div>})}</section><FeaturedPeople /><section className="section-block"><div className="section-title"><h2>Bạn bè của bạn</h2></div>{!accepted.length ? <EmptyState title="Chưa có bạn bè" description="Khi một lời mời được chấp nhận, người sáng tạo đó sẽ xuất hiện ở đây." action={<Link className="secondary-button" to="/community#community-people">Gặp nhóm Morimori</Link>} /> : <div className="people-grid">{accepted.map((item) => { const person = item.requester_id === user.id ? item.addressee : item.requester; return <article className="person-card glass-card" key={item.id}><Avatar profile={person} className="avatar-lg" /><h3>{person.display_name || person.username}</h3><p>@{person.username}</p><small>{person.roles?.join(' · ')}</small></article>})}</div>}</section></>}</div>
 }
 
 export function WorldsPage({ archiveOnly = false }) {

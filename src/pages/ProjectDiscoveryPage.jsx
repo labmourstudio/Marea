@@ -1,36 +1,39 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { ArrowRight, BriefcaseBusiness, ChevronLeft, ChevronRight, Clock3, Flame, HeartHandshake, Search, Sparkles, UsersRound } from 'lucide-react'
+import { ArrowRight, BookOpen, Bookmark, BriefcaseBusiness, ChevronLeft, ChevronRight, Clapperboard, Clock3, Dices, Film, Flame, Gamepad2, HeartHandshake, Palette, Search, Sparkles, UsersRound } from 'lucide-react'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { publicStorageUrl, supabase } from '../lib/supabase'
+import { readSavedProjectGroups, toggleSavedProjectGroup } from '../lib/savedProjectGroups'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateView'
 
 const categories = [
-  { key: 'all', label: 'Tất cả' },
-  { key: 'game', label: 'Game' },
-  { key: 'story', label: 'Truyện' },
-  { key: 'comic', label: 'Comic' },
-  { key: 'rpg', label: 'RPG' },
-  { key: 'visual', label: 'Visual Novel' },
-  { key: 'animation', label: 'Animation' },
+  { key: 'all', label: 'Tất cả', icon: Sparkles, tone: 'blue' },
+  { key: 'game', label: 'Game', icon: Gamepad2, tone: 'violet' },
+  { key: 'story', label: 'Truyện', icon: BookOpen, tone: 'rose' },
+  { key: 'comic', label: 'Comic', icon: Palette, tone: 'cyan' },
+  { key: 'rpg', label: 'RPG', icon: Dices, tone: 'indigo' },
+  { key: 'visual', label: 'Visual Novel', icon: BookOpen, tone: 'lilac' },
+  { key: 'film', label: 'Phim', icon: Clapperboard, tone: 'amber' },
+  { key: 'animation', label: 'Animation', icon: Film, tone: 'teal' },
 ]
 
 const facets = [
   { key: 'all', label: 'Tất cả dự án', icon: BriefcaseBusiness },
   { key: 'friends', label: 'Từ bạn bè', icon: UsersRound },
   { key: 'following', label: 'Đang theo dõi', icon: HeartHandshake },
-  { key: 'active', label: 'Hoạt động sôi nổi', icon: Flame },
-  { key: 'creators', label: 'Tác giả được theo dõi', icon: Sparkles },
+  { key: 'active', label: 'Đang thảo luận', icon: Flame },
+  { key: 'creators', label: 'Tác giả nổi bật', icon: Sparkles },
   { key: 'funding', label: 'Đang tìm vốn', icon: BriefcaseBusiness },
   { key: 'latest', label: 'Mới công bố', icon: Clock3 },
 ]
 
-const categoryMatches = (project, key) => {
+function categoryMatches(project, key) {
   const type = project.project_type?.toLowerCase() || ''
   if (key === 'all') return true
   if (key === 'game') return ['game', 'game event'].includes(type)
   if (key === 'story') return ['novel', 'story'].includes(type)
   if (key === 'visual') return type === 'visual novel'
+  if (key === 'film') return ['film', 'movie'].includes(type)
   return type === key
 }
 
@@ -38,12 +41,15 @@ const seeksFunding = (project) => project.looking_for?.some((value) => /funding|
 const byRecent = (a, b) => new Date(b.published_at || b.created_at || 0) - new Date(a.published_at || a.created_at || 0)
 const countBy = (rows, field) => { const counts = {}; for (const row of rows || []) counts[row[field]] = (counts[row[field]] || 0) + 1; return counts }
 
-function ProjectPoster({ project, rank }) {
+function ProjectPoster({ project, rank, saved, onSave }) {
   const cover = publicStorageUrl('project-media', project.cover_path)
-  return <Link className="discovery-poster glass-card" to={`/projects/${project.id}`} aria-label={`Mở dự án ${project.name}`}>
-    <div className="discovery-cover">{cover ? <img src={cover} loading="lazy" alt={`Bìa dự án ${project.name}`} /> : <span className="discovery-cover-placeholder" aria-hidden="true">{project.name?.slice(0, 1)?.toUpperCase() || 'M'}</span>}{rank && <span className="discovery-rank">#{rank} · Bài liên kết</span>}</div>
-    <div className="discovery-poster-body"><small>{project.project_type} · {project.genre || project.stage}</small><h3>{project.name}</h3><p>{project.summary || 'Tác giả chưa viết mô tả công khai.'}</p><span>{project.owner?.display_name || project.owner?.username || 'Người sáng tạo'}</span>{seeksFunding(project) && <b>Đang tìm vốn</b>}</div>
-  </Link>
+  return <article className="discovery-poster glass-card">
+    <Link className="discovery-poster-link" to={`/projects/${project.id}`} aria-label={`Mở dự án ${project.name}`}>
+      <div className="discovery-cover">{cover ? <img src={cover} loading="lazy" alt={`Bìa dự án ${project.name}`} /> : <span className="discovery-cover-placeholder" aria-hidden="true">{project.name?.slice(0, 1)?.toUpperCase() || 'M'}</span>}{rank && <span className="discovery-rank">#{rank} · Bài liên kết</span>}</div>
+      <div className="discovery-poster-body"><small>{project.project_type} · {project.genre || project.stage}</small><h3>{project.name}</h3><p>{project.summary || 'Chưa có mô tả.'}</p><span>{project.owner?.display_name || project.owner?.username || 'Người sáng tạo'}</span>{seeksFunding(project) && <b>Đang tìm vốn</b>}</div>
+    </Link>
+    <button type="button" className={`discovery-save${saved ? ' active' : ''}`} onClick={() => onSave(project.id)} aria-pressed={saved} aria-label={saved ? `Bỏ lưu nhóm dự án ${project.name}` : `Lưu nhóm dự án ${project.name}`} title={saved ? 'Bỏ lưu' : 'Lưu nhóm dự án'}><Bookmark size={17} fill={saved ? 'currentColor' : 'none'} /></button>
+  </article>
 }
 
 export default function ProjectDiscoveryPage() {
@@ -54,6 +60,7 @@ export default function ProjectDiscoveryPage() {
   const [followedIds, setFollowedIds] = useState(new Set())
   const [activity, setActivity] = useState({})
   const [followers, setFollowers] = useState({})
+  const [savedVersion, setSavedVersion] = useState(0)
   const [error, setError] = useState('')
   const [category, setCategory] = useState('all')
   const [facet, setFacet] = useState('all')
@@ -103,12 +110,18 @@ export default function ProjectDiscoveryPage() {
   const featured = useMemo(() => [...(projects || [])].filter((item) => categoryMatches(item, category) && activity[item.id] > 0)
     .sort((a, b) => (activity[b.id] || 0) - (activity[a.id] || 0) || byRecent(a, b)).slice(0, 6), [projects, category, activity])
   const rankings = Object.fromEntries(featured.map((item, index) => [item.id, index + 1]))
+  const savedIds = useMemo(() => readSavedProjectGroups(user.id), [user.id, savedVersion])
+  const toggleSave = (projectId) => { try { toggleSavedProjectGroup(user.id, projectId); setSavedVersion((version) => version + 1) } catch { setError('Không lưu được trên thiết bị này.') } }
+  const poster = (project, rank) => <ProjectPoster key={project.id} project={project} rank={rank} saved={savedIds.includes(project.id)} onSave={toggleSave} />
 
   return <div className="content-page discovery-page">
-    <header className="discovery-heading"><span className="eyebrow purple">KHÁM PHÁ · MORA</span><h1>Khám phá dự án</h1><p>Tìm game, truyện và các ý tưởng được tác giả chủ động công khai. Dự án riêng của bạn nằm trong Không gian của tôi.</p></header>
-    <section className="discovery-types" aria-label="Thể loại dự án"><div className="discovery-types-heading"><strong>Thể loại</strong><div><button type="button" aria-label="Lướt thể loại về trái" onClick={() => stripRef.current?.scrollBy({ left: -430, behavior: 'smooth' })}><ChevronLeft size={18} /></button><button type="button" aria-label="Lướt thể loại về phải" onClick={() => stripRef.current?.scrollBy({ left: 430, behavior: 'smooth' })}><ChevronRight size={18} /></button></div></div><div className="discovery-type-strip" ref={stripRef}>{categories.map((item) => <button type="button" key={item.key} className={category === item.key ? 'active' : ''} aria-pressed={category === item.key} onClick={() => setCategory(item.key)}>{item.label}<ArrowRight size={15} /></button>)}</div></section>
-    {featured.length > 0 && <section className="discovery-featured"><div className="section-title"><div><span className="eyebrow purple">CỘNG ĐỒNG ĐANG CHIA SẺ</span><h2>Dự án có hoạt động công khai</h2><p>Xếp theo số bài đăng công khai gắn với dự án trong danh sách đã tải.</p></div></div><div className="discovery-featured-scroll">{featured.map((item) => <ProjectPoster key={item.id} project={item} rank={rankings[item.id]} />)}</div></section>}
-    <div className="discovery-layout"><aside className="discovery-filters glass-card" aria-label="Bộ lọc dự án"><h2>Khám phá theo</h2><div>{facets.map(({ key, label, icon: Icon }) => <button type="button" key={key} className={facet === key ? 'active' : ''} aria-pressed={facet === key} onClick={() => setFacet(key)}><Icon size={17} />{label}</button>)}<button type="button" disabled title="Chưa có trạng thái gọi vốn được xác minh"><HeartHandshake size={17} />Đã gọi vốn thành công <small>Chờ xác minh</small></button></div><Link to="/studio/projects">Dự án của tôi <ArrowRight size={15} /></Link></aside><main className="discovery-results"><div className="discovery-result-head"><div><span className="eyebrow purple">DỰ ÁN CỦA CỘNG ĐỒNG</span><h2>{facets.find((item) => item.key === facet)?.label}</h2><p>{filtered.length} dự án công khai trong danh sách đã tải</p></div><label className="discovery-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên, tác giả, thể loại…" aria-label="Tìm dự án" /></label></div>{projects === null ? <LoadingState /> : error ? <ErrorState message={error} /> : filtered.length ? <div className="discovery-grid">{filtered.map((item) => <ProjectPoster key={item.id} project={item} rank={facet === 'active' ? rankings[item.id] : null} />)}</div> : <EmptyState title="Chưa có dự án phù hợp" description={facet === 'funding' ? 'Chưa có dự án công khai đánh dấu đang tìm vốn trong thể loại này.' : 'Thử chọn thể loại hoặc bộ lọc khác. Dự án riêng tư không xuất hiện ở đây.'} action={<Link className="secondary-button" to="/studio/projects">Tạo dự án của tôi</Link>} />}</main></div>
-    <section className="discovery-sample" aria-label="Kịch bản minh họa"><div><span className="eyebrow purple">KỊCH BẢN MẪU · KHÔNG PHẢI DỰ ÁN THẬT</span><h2>Xem thử một nhóm sáng tạo</h2><p>Morimori và các hồ sơ liên quan là ví dụ giao diện, nằm ngoài danh sách và xếp hạng của người dùng thật.</p></div><Link className="discovery-sample-card glass-card" to="/community#community-project"><span className="discovery-sample-art">M</span><span><small>GAME · MẪU</small><strong>Morimori</strong><small>Mabi và nhóm · kịch bản minh họa</small></span></Link></section>
+    <section className="mora-screen discovery-first-screen" aria-label="Khám phá dự án">
+      <div className="discovery-types-heading"><h1>Thể loại</h1><div><button type="button" aria-label="Lướt thể loại về trái" onClick={() => stripRef.current?.scrollBy({ left: -430, behavior: 'smooth' })}><ChevronLeft size={18} /></button><button type="button" aria-label="Lướt thể loại về phải" onClick={() => stripRef.current?.scrollBy({ left: 430, behavior: 'smooth' })}><ChevronRight size={18} /></button></div></div>
+      <div className="discovery-type-strip" ref={stripRef} aria-label="Thể loại dự án">{categories.map(({ key, label, icon: Icon, tone }) => <button type="button" key={key} className={`discovery-type-${tone}${category === key ? ' active' : ''}`} aria-pressed={category === key} onClick={() => setCategory(key)}><Icon size={22} strokeWidth={1.7} aria-hidden="true" /><span>{label}</span><ArrowRight size={15} aria-hidden="true" /></button>)}</div>
+      <div className="discovery-layout"><aside className="discovery-filters glass-card" aria-label="Bộ lọc dự án"><h2>Khám phá theo</h2><div>{facets.map(({ key, label, icon: Icon }) => <button type="button" key={key} className={facet === key ? 'active' : ''} aria-pressed={facet === key} onClick={() => setFacet(key)}><Icon size={17} />{label}</button>)}<button type="button" disabled title="Chưa có trạng thái gọi vốn được xác minh"><HeartHandshake size={17} />Đã gọi vốn <small>Chờ xác minh</small></button></div><Link to="/studio/projects">Dự án của tôi <ArrowRight size={15} /></Link></aside>
+        <main className="discovery-results"><div className="discovery-result-head"><div><h2>{facets.find((item) => item.key === facet)?.label}</h2><small>{filtered.length} dự án công khai</small></div><label className="discovery-search"><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm dự án, tác giả…" aria-label="Tìm dự án" /></label></div>{projects === null ? <LoadingState /> : error ? <ErrorState message={error} /> : filtered.length ? <div className="discovery-grid">{filtered.map((item) => poster(item, facet === 'active' ? rankings[item.id] : null))}</div> : <EmptyState title="Chưa có dự án phù hợp" description="Thử chọn thể loại hoặc bộ lọc khác." action={<Link className="secondary-button" to="/studio/projects">Tạo dự án</Link>} />}</main>
+      </div>
+    </section>
+    {featured.length > 0 && <section className="mora-screen discovery-featured" aria-label="Dự án có thảo luận"><div className="project-library-heading"><h2>Đang được thảo luận</h2><small>Xếp theo số bài công khai liên kết dự án trong danh sách đã tải.</small></div><div className="discovery-featured-scroll">{featured.map((item) => poster(item, rankings[item.id]))}</div></section>}
   </div>
 }
