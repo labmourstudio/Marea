@@ -10,7 +10,9 @@ import LanguageWelcome from './components/LanguageWelcome'
 import SettingsPage from './pages/SettingsPage'
 import DemoPage from './pages/DemoPage'
 import AuthPage from './pages/AuthPage'
-import { ForbiddenPage, FriendsPage, LearnPage, ProfilePage, ProjectsPage, SearchPage, WorldsPage } from './pages/MainPages'
+import { ForbiddenPage, FriendsPage, LearnPage, ProfilePage, SearchPage, WorldsPage } from './pages/MainPages'
+import ProjectDiscoveryPage from './pages/ProjectDiscoveryPage'
+import PublicProjectPage from './pages/PublicProjectPage'
 import FeedPage, { ProjectActivityPage } from './pages/FeedPage'
 import OnboardingPage from './pages/OnboardingPage'
 import ResetPasswordPage from './pages/ResetPasswordPage'
@@ -38,8 +40,9 @@ export default function App() {
         <Route path="/feed" element={<FeedPage />} />
         <Route path="/friends" element={<FriendsPage />} />
         <Route path="/worlds" element={<Navigate to="/studio/projects" replace />} />
-        <Route path="/projects" element={<ProjectsPage />} />
+        <Route path="/projects" element={<ProjectDiscoveryPage />} />
         <Route path="/projects/:projectId/activity" element={<ProjectActivityPage />} />
+        <Route path="/projects/:projectId" element={<PublicProjectPage />} />
         <Route path="/learn" element={<LearnPage />} />
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/studio" element={<StudioPage />} />

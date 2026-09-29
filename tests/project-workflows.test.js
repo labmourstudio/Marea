@@ -19,11 +19,14 @@ test('Story, Game Design and Game Event expose the right project sections', () =
 test('lore and game economy entries stay out of generic custom notes', () => {
   const lore = sectionForTab('lore', 'Lore', 0)
   const currency = { section_type: 'custom', content: { category: 'game_currency' } }
+  const board = { section_type: 'custom', content: { category: 'board_element', board_tab: 'overview', text: 'Riêng tư' } }
   const note = sectionForTab('custom', 'Note', 1)
 
   assert.ok(sectionBelongsToTab(lore, 'lore'))
   assert.ok(!sectionBelongsToTab(lore, 'custom'))
   assert.ok(!sectionBelongsToTab(currency, 'custom'))
+  assert.ok(!sectionBelongsToTab(board, 'custom'))
+  assert.ok(!sectionBelongsToTab(board, 'lore'))
   assert.ok(sectionBelongsToTab(note, 'custom'))
 })
 
