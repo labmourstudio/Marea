@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import { BookOpen, Clapperboard, Gamepad2, Globe2, LockKeyhole, Plus, Upload } from 'lucide-react'
-import { Link, Navigate, useNavigate, useParams } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
+import { validateProjectBackup } from '../lib/projectData'
+import { useBackend } from '../context/BackendContext'
 import { useAuth } from '../context/AuthContext'
-import { listLocalProjects, putLocalProject } from '../lib/localProjects'
+import { deleteLocalProject, listLocalProjects, putLocalProject } from '../lib/localProjects'
 import { worldToLocalProject } from '../lib/legacyWorlds'
 import { isGameProject } from '../lib/projectWorkflows'
 import { supabase } from '../lib/supabase'
@@ -12,6 +14,8 @@ const projectTypes = ['Novel', 'Comic', 'Visual Novel', 'Film', 'Animation', 'Ga
 
 export default function LocalProjectsPage() {
   const { user } = useAuth()
+  const { project_workspace: cloudReady } = useBackend()
+  const [cloud, setCloud] = useState([])
   const navigate = useNavigate()
   const [projects, setProjects] = useState(null)
   const [worlds, setWorlds] = useState([])
@@ -38,6 +42,25 @@ export default function LocalProjectsPage() {
     return () => { active = false }
   }, [user.id])
 
+  useEffect(() => {
+    let active = true
+    if (!cloudReady) return undefined
+    async function loadCloud() {
+      const team = await supabase.from('project_members').select('project_id,role').eq('user_id',user.id)
+      if (team.error) throw team.error
+      const ids = (team.data || []).map((item) => item.project_id)
+      const fields = 'id,name,project_type,status,visibility,updated_at'
+      const [owned,joined] = await Promise.all([supabase.from('projects').select(fields).eq('owner_id',user.id), ids.length ? supabase.from('projects').select(fields).in('id',ids) : { data:[] }])
+      if (owned.error || joined.error) throw owned.error || joined.error
+      if (active) setCloud([...new Map([...owned.data,...joined.data].map((item) => [item.id,item])).values()].sort((a,b) => b.updated_at.localeCompare(a.updated_at)))
+    }
+    loadCloud().catch((caught) => { if (active) setError(`Không tải được dự án cloud: ${caught.message}`) })
+    return () => { active = false }
+  }, [cloudReady,user.id])
+  async function deleteDraft(id) {
+    if (!window.confirm('Xóa bản nháp trên thiết bị này? Tải bản sao lưu nếu bạn cần giữ nội dung.')) return
+    try { await deleteLocalProject(id); await load() } catch (caught) { setError(caught.message) }
+  }
   async function copyWorld(world) {
     setBusy(true); setError('')
     try {
@@ -70,7 +93,7 @@ export default function LocalProjectsPage() {
     try {
       if (file.size > 30 * 1024 * 1024) throw new Error('Bản sao lưu phải nhỏ hơn 30 MB.')
       const backup = JSON.parse(await file.text())
-      if (backup.owner_id !== user.id || typeof backup.name !== 'string' || !['sections', 'nodes', 'links', 'events'].every((key) => Array.isArray(backup[key]))) throw new Error('Bản sao lưu không thuộc tài khoản đang đăng nhập hoặc bị thiếu dữ liệu.')
+      validateProjectBackup(backup, user.id)
       const id = `local-${crypto.randomUUID()}`
       await putLocalProject({ ...backup, id, local: true, status: 'draft', visibility: 'private', pending_cloud_id: undefined, updated_at: new Date().toISOString() })
       navigate(`/studio/projects/${id}`)
@@ -98,14 +121,10 @@ export default function LocalProjectsPage() {
     </section>
     <section className="mora-screen project-library-screen" aria-labelledby="my-projects-title">
       <div className="project-library-heading"><h2 id="my-projects-title">Dự án của tôi</h2><label className="secondary-button backup-import"><Upload size={16} /> Nhập bản sao lưu<input type="file" accept=".json,application/json" onChange={importBackup} hidden /></label></div>
-      {projects === null ? <LoadingState /> : projects.length ? <div className="project-grid">{projects.map((item) => <Link className="glass-card local-project-poster" to={`/studio/projects/${item.id}`} key={item.id}><span className="local-project-cover">{item.cover_data ? <img src={item.cover_data} alt={`Bìa ${item.name}`} loading="lazy" /> : <span aria-hidden="true">{item.name.slice(0, 1).toUpperCase()}</span>}</span><span className="local-project-details"><small><LockKeyhole size={13} /> CHỈ TRÊN MÁY · {item.project_type}</small><strong>{item.name}</strong><span>Chỉnh sửa ↗</span></span></Link>)}</div> : <EmptyState title="Chưa có dự án" description="Tạo dự án ở khung phía trên để bắt đầu." />}
+      {projects === null ? <LoadingState /> : projects.length ? <div className="project-grid">{projects.map((item) => <article className="glass-card local-project-poster" key={item.id}><Link to={`/studio/projects/${item.id}`}><span className="local-project-cover">{item.cover_data ? <img src={item.cover_data} alt={`Bìa ${item.name}`} loading="lazy" /> : <span aria-hidden="true">{item.name.slice(0, 1).toUpperCase()}</span>}</span><span className="local-project-details"><small><LockKeyhole size={13} /> CHỈ TRÊN MÁY · {item.project_type}</small><strong>{item.name}</strong><span>Chỉnh sửa ↗</span></span></Link><button type="button" className="text-danger local-project-delete" onClick={() => deleteDraft(item.id)}>Xóa bản trên máy</button></article>)}</div> : <EmptyState title="Chưa có dự án" description="Tạo dự án ở khung phía trên để bắt đầu." />}
     </section>
+    {cloudReady && <section className="mora-screen project-library-screen"><div className="project-library-heading"><h2>Dự án cloud và nhóm đã tham gia</h2></div>{cloud.length ? <div className="project-grid">{cloud.map((item) => <Link className="glass-card local-project-poster" to={`/studio/projects/${item.id}`} key={item.id}><span className="local-project-cover"><span>{item.name.slice(0,1)}</span></span><span className="local-project-details"><small>MORA CLOUD · {item.project_type}</small><strong>{item.name}</strong><span>{item.status === 'published' ? 'Có bản công khai · mở nội bộ' : 'Nội bộ · mở dự án'} ↗</span></span></Link>)}</div> : <EmptyState title="Chưa có dự án cloud" description="Mở một bản nháp trên máy và chọn đồng bộ để cộng tác." />}</section>}
     {worldError && <p role="alert" className="form-message error">Không mở được dữ liệu Thế giới cũ: {worldError}</p>}
     {!!worlds.length && <section className="mora-screen project-archive-screen" aria-labelledby="archive-title"><div className="project-library-heading"><h2 id="archive-title">Thế giới đã tạo trước đây</h2><Link className="secondary-button" to="/studio/legacy-worlds">Xem lưu trữ cũ</Link></div><div className="project-grid">{worlds.map((world) => { const copied = projects?.some((item) => item.source_world_id === world.id); return <article className="project-card glass-card project-list-card" key={world.id}><Globe2 /><h3>{world.name}</h3><p>{world.world_type === 'game' ? 'Game' : 'Truyện'}</p><button className="secondary-button" type="button" disabled={busy || copied} onClick={() => copyWorld(world)}>{copied ? 'Đã sao chép' : 'Sao chép vào dự án'}</button></article> })}</div></section>}
   </div>
-}
-
-export function LocalProjectGuard({ children }) {
-  const { projectId } = useParams()
-  return projectId.startsWith('local-') ? children : <Navigate to="/studio/projects" replace />
 }

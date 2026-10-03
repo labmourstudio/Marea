@@ -39,3 +39,7 @@ Workflow [deploy-pages.yml](.github/workflows/deploy-pages.yml) triển khai khi
 - Dịch vụ GitHub Pages và các gói Supabase miễn phí có hạn mức theo nhà cung cấp; kiểm tra hạn mức tài khoản khi vận hành. Không có tính năng thu phí trong ứng dụng.
 
 Trước khi giới thiệu thương hiệu Mora rộng rãi, kiểm tra quyền sử dụng tên, tên miền và tài khoản mạng xã hội.
+
+## Bản rà soát 03/10/2026
+
+Xem [danh sách tính năng, lỗi đã sửa, migration và việc còn lại](docs/MORA_RELEASE_AUDIT_2026-10-03.md). Bản nháp cloud/cộng tác và MFA quản trị cần các migration trong tài liệu; frontend kiểm tra capability trước khi bật. Không coi schema trong git là schema đã áp dụng trên Supabase.

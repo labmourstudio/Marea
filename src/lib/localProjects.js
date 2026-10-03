@@ -1,3 +1,5 @@
+import { validateImage } from './mediaValidation'
+
 const DB_NAME = 'mora-local-projects'
 const STORE = 'drafts'
 
@@ -26,10 +28,11 @@ async function transaction(mode, operation) {
 export const listLocalProjects = () => transaction('readonly', (store) => store.getAll())
 export const getLocalProject = (id) => transaction('readonly', (store) => store.get(id))
 export const putLocalProject = (draft) => transaction('readwrite', (store) => store.put(draft))
+export const deleteLocalProject = (id) => transaction('readwrite', (store) => store.delete(id))
 
-export function readImage(file) {
+export async function readImage(file) {
+  await validateImage(file)
   return new Promise((resolve, reject) => {
-    if (!file || !['image/png','image/jpeg','image/webp','image/gif'].includes(file.type) || file.size > 8 * 1024 * 1024) { reject(new Error('Chỉ nhận PNG, JPEG, WebP hoặc GIF tối đa 8 MB.')); return }
     const reader = new FileReader()
     reader.onload = () => resolve(reader.result)
     reader.onerror = () => reject(reader.error)
