@@ -36,8 +36,9 @@ export function ProjectStudioPage() {
   const { projectId } = useParams()
   const navigate = useNavigate()
   const { user } = useAuth()
-  const { project_workspace: cloudReady } = useBackend()
+  const { project_workspace: cloudReady, loading: checkingBackend } = useBackend()
   const local = projectId.startsWith('local-')
+  const canLoadWorkspace = local || cloudReady
   const [draft, setDraft] = useState(null)
   const [error, setError] = useState('')
   const [saveStatus, setSaveStatus] = useState('Đang mở…')
@@ -106,6 +107,7 @@ export function ProjectStudioPage() {
   useEffect(() => {
     let active = true
     ready.current = false
+    if (!canLoadWorkspace) return undefined
     async function load() {
       try {
         let next
@@ -137,7 +139,7 @@ export function ProjectStudioPage() {
     }
     load()
     return () => { active = false; ready.current = false }
-  }, [local, projectId, user.id])
+  }, [local, projectId, user.id, canLoadWorkspace])
 
   useEffect(() => {
     if (!draft || !ready.current || draft === savedDraft.current || (!local && draft.owner_id !== user.id && !['editor','manager'].includes(draft.member_role))) return undefined
@@ -418,6 +420,7 @@ export function ProjectStudioPage() {
     setTimeout(() => { window.print(); setTimeout(() => document.body.classList.remove('printing-project'), 1000) }, 80)
   }
 
+  if (!local && !cloudReady) return checkingBackend ? <LoadingState /> : <ErrorState message="Không gian cộng tác đang chờ migration Mora trên Supabase. Bản nháp trên thiết bị vẫn dùng được trong Không gian của tôi." retry={() => navigate('/studio/projects')} />
   if (error && !draft) return <ErrorState message={error} retry={() => navigate('/studio/projects')} />
   if (!draft) return <LoadingState />
   const workflow = projectWorkflow(draft.project_type)
