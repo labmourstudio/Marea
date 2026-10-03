@@ -54,6 +54,16 @@ Không thêm người dùng, bài đăng, dự án, khóa học hoặc số li�
 14. Policy Storage cũ có thể cho viewer xóa file dự án dựa vào owner_id; giới hạn đúng bucket/thư mục và quyền dự án.
 15. MIME ảnh có thể bị giả; kiểm tra signature/định dạng/dung lượng, chỉ giữ URL liên hệ http/https.
 16. Bundle ban đầu lớn hơn 500 KB; tải editor và trang minh họa theo route.
+17. Hồ sơ riêng tư không trả username nhưng vẫn tạo link `/u/undefined`; dùng nhãn dự phòng và bỏ link không hợp lệ.
+18. Nhãn textarea có thể chứa cả nội dung sau khi mở lại dự án; bổ sung tên truy cập rõ ràng và nhãn nút nối canvas. Ghi nhận bản cần lưu ngay sau commit giao diện.
+
+## Kết quả kiểm thử
+
+- `npm run lint`, `npm test` (10 bài) và `npm run build` đạt.
+- PostgreSQL 17 trong CI áp dụng đủ bốn migration và đạt kiểm tra RLS/RPC: người ngoài, viewer/editor, ghi nguyên tử, xung đột phiên bản, mời/thu hồi, nội dung công khai, khóa học, kết bạn, thông báo và MFA Admin.
+- Chromium với API mô phỏng cách ly: tạo bản local; sửa lore và rời trang ngay; mở lại lore/nhân vật; hồ sơ 16:9; nối quan hệ, kéo thả, zoom; avatar vuông; 8 route trên mobile ở cả sáng/tối; không có lỗi JavaScript chưa xử lý. Fixture chỉ tồn tại trong trình duyệt kiểm thử; không gọi database thật.
+- GitHub Actions giữ báo cáo và ảnh chụp trong artifact `mora-browser-verification` trong 7 ngày. Script tái kiểm tra là `tests/browser-smoke.cjs`.
+- Chưa kiểm chứng đăng ký email/OAuth, Storage API và cộng tác bằng hai tài khoản trên Supabase đang vận hành. Cần làm sau khi áp dụng migration thật.
 
 ## Việc cần làm trên Supabase để bật bản cloud
 

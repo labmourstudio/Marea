@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { AudioLines, BarChart3, Bookmark, Heart, Image as ImageIcon, MessageCircle, Send, Share2, Video } from 'lucide-react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
+import CreatorName from '../components/CreatorName'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateView'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
@@ -91,7 +92,7 @@ export function PostCard({ post, onRefresh, poll = null }) {
     const result = await supabase.from('reports').insert({ reporter_id:user.id,target_type:'post',target_id:post.id,reason:reason.trim().slice(0,500) })
     setError(result.error ? result.error.message : 'Đã gửi báo cáo cho quản trị viên.')
   }
-  return <article id={`post-${post.id}`} className="post-card glass-card"><header className="post-header"><PostAvatar person={post.author} /><div><Link to={`/u/${post.author?.username}`}><strong>{post.author?.display_name || post.author?.username || 'Người sáng tạo'}</strong></Link><span>{post.author?.username ? `@${post.author.username} · ` : ''} {new Date(post.published_at || post.created_at).toLocaleDateString()}</span></div></header>
+  return <article id={`post-${post.id}`} className="post-card glass-card"><header className="post-header"><PostAvatar person={post.author} /><div><CreatorName person={post.author} /><span>{post.author?.username ? `@${post.author.username} · ` : ''} {new Date(post.published_at || post.created_at).toLocaleDateString()}</span></div></header>
     {post.content_type === 'poll' && <span className="post-type"><BarChart3 size={14} /> Poll · Bình chọn</span>}
     {post.content_type === 'discussion' && <span className="post-type"><MessageCircle size={14} /> Discussion · Thảo luận</span>}
     <p className="post-text">{post.content}</p>{editing && <div className="post-edit"><textarea aria-label="Chỉnh sửa bài đăng" value={edited} maxLength={5000} onChange={(event) => setEdited(event.target.value)} /><button className="secondary-button" disabled={busy || !edited.trim()} onClick={editPost}>Lưu</button><button className="text-button" onClick={() => setEditing(false)}>Hủy</button></div>}
@@ -100,7 +101,7 @@ export function PostCard({ post, onRefresh, poll = null }) {
     {!!post.hashtags?.length && <div className="post-topics">{post.hashtags.map((tag) => <Link key={tag} to={`/feed?topic=${encodeURIComponent(tag)}`}>#{topics.find(([key]) => key === tag)?.[1] || tag}</Link>)}</div>}
     {!!poll?.options?.length && <div className="post-poll">{poll.options.map((option) => <button type="button" key={option.id} disabled={busy || !user} className={poll.myVote === option.id ? 'selected' : ''} onClick={() => vote(option.id)}><span>{option.label}</span><small>{poll.counts?.[option.id] || 0} votes</small></button>)}</div>}
     <footer className="post-actions"><button disabled={busy || !user} className={liked ? 'liked' : ''} onClick={like} aria-label="Like"><Heart /> {post.reactions?.length || 0}</button><button onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}><MessageCircle /> {post.comments?.length || 0}</button><button disabled={!user} className={saved ? 'liked' : ''} onClick={save} title="Lưu theo tài khoản trên thiết bị này"><Bookmark /></button><button onClick={share} aria-label="Share"><Share2 /></button></footer>
-    {expanded && <section className="post-comments"><h4>Discussion · Bình luận</h4>{post.comments?.map((item) => <p key={item.id}><Link to={`/u/${item.author?.username}`}><strong>{item.author?.display_name || item.author?.username || 'Người sáng tạo'}</strong></Link> {item.content}</p>)}{user ? <form onSubmit={submitComment}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={5000} placeholder="Write a comment / Viết bình luận" aria-label="Write a comment" /><button className="secondary-button" disabled={!comment.trim() || busy}><Send size={15} /></button></form> : <Link to="/login">Đăng nhập để bình luận</Link>}</section>}
+    {expanded && <section className="post-comments"><h4>Discussion · Bình luận</h4>{post.comments?.map((item) => <p key={item.id}><CreatorName person={item.author} /> {item.content}</p>)}{user ? <form onSubmit={submitComment}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={5000} placeholder="Write a comment / Viết bình luận" aria-label="Write a comment" /><button className="secondary-button" disabled={!comment.trim() || busy}><Send size={15} /></button></form> : <Link to="/login">Đăng nhập để bình luận</Link>}</section>}
     {user && <div className="post-management">{post.user_id === user.id ? <><button className="text-button" onClick={() => setEditing(true)}>Chỉnh sửa</button><button className="text-danger" disabled={busy} onClick={deletePost}>Xóa</button></> : <button className="text-button" onClick={reportPost}>Báo cáo</button>}</div>}
     {error && <p className="form-message error" role="status">{error}</p>}
   </article>

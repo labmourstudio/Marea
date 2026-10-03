@@ -1,4 +1,5 @@
 /* Shared controls for the real profile, lesson and notification flows. */
+a.primary-button,a.secondary-button,a.ghost-button { text-decoration:none; }
 .portfolio-page { max-width:1120px; margin:auto; }
 .portfolio-page .profile-main>.avatar { object-fit:cover; flex:none; aspect-ratio:1; }
 .portfolio-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
