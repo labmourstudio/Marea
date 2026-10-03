@@ -1,0 +1,34 @@
+/* Shared controls for the real profile, lesson and notification flows. */
+.portfolio-page { max-width:1120px; margin:auto; }
+.portfolio-page .profile-main>.avatar { object-fit:cover; flex:none; aspect-ratio:1; }
+.portfolio-actions { display:flex; gap:10px; align-items:center; flex-wrap:wrap; }
+.portfolio-page .profile-identity { gap:18px; }
+.portfolio-page .profile-stats>span { width:auto; height:auto; background:none; display:flex; gap:6px; align-items:baseline; }
+.portfolio-page .profile-stats small { font-size:12px; }
+.portfolio-section { margin-top:26px; }
+.portfolio-section h2 { font-size:21px; }
+.resource-list { display:grid; gap:12px; }
+.resource-list>a { padding:20px; color:var(--ink); text-decoration:none; }
+.resource-list small { display:block; color:var(--muted); margin-top:6px; }
+.resource-list p { white-space:pre-wrap; overflow-wrap:anywhere; }
+.course-card { text-decoration:none; color:var(--ink); }
+.course-reader-layout { display:grid; grid-template-columns:250px minmax(0,1fr); gap:18px; margin-top:18px; }
+.course-reader-layout nav { display:flex; flex-direction:column; align-self:start; gap:10px; }
+.course-reader-layout nav button { justify-content:flex-start; text-align:left; }
+.course-reader-layout img,.course-reader-layout video { max-width:100%; max-height:70vh; object-fit:contain; border-radius:14px; display:block; margin:20px 0; }
+.lesson-text { white-space:pre-wrap; overflow-wrap:anywhere; line-height:1.8; }
+.lesson-exercise { padding:16px; border:1px solid var(--line); border-radius:14px; margin-top:20px; }
+.course-editor label,.mfa-panel label,.project-inquiry-form label { display:grid; gap:7px; margin:15px 0; color:var(--ink); }
+.course-editor textarea,.course-editor input,.course-editor select,.project-inquiry-form textarea,.project-inquiry-form select,.mfa-panel input { padding:12px; border:1px solid var(--line); border-radius:11px; background:var(--surface-strong); color:var(--ink); width:100%; }
+.course-editor footer { margin-top:20px; }
+.post-edit { display:grid; gap:10px; }.post-edit textarea { width:100%; min-height:100px; background:var(--surface-strong); color:var(--ink); border:1px solid var(--line); border-radius:12px; padding:12px; }
+.post-header a,.post-comments a,.friend-compact a { color:var(--ink); text-decoration:none; }
+.post-management { display:flex; gap:16px; padding-top:10px; border-top:1px solid var(--line); margin-top:10px; }
+.feed-more { display:flex; margin:18px auto; }
+.notification-list { display:grid; gap:12px; }.notification-row { display:flex; gap:14px; align-items:center; padding:18px; }
+.notification-row.unread { border-color:var(--purple); }.notification-row>a { flex:1; color:var(--ink); text-decoration:none; }.notification-row p { margin:7px 0; }.notification-row small { color:var(--muted); }
+.mfa-panel { margin:20px 0; }.mfa-enrollment { display:grid; gap:12px; }.mfa-enrollment img { width:210px; background:white; padding:10px; border-radius:12px; }.mfa-enrollment code { display:block; overflow-wrap:anywhere; margin:12px 0; }.mfa-panel form { max-width:400px; }
+.content-copy-restricted { user-select:none; }.content-copy-restricted input,.content-copy-restricted textarea { user-select:text; }
+.local-project-poster>a { text-decoration:none; color:var(--ink); display:flex; flex-direction:column; height:100%; }.local-project-delete { padding:12px; text-align:left; border-top:1px solid var(--line); }
+:focus-visible { outline:3px solid var(--purple); outline-offset:4px; }
+@media(max-width:740px) { .course-reader-layout { grid-template-columns:1fr; }.course-reader-layout nav { flex-direction:row; overflow-x:auto; }.course-reader-layout nav button { flex:none; max-width:220px; }.portfolio-page .profile-identity { margin:14px 0 0; align-items:flex-start; }.portfolio-actions { margin-top:12px; }.portfolio-page .profile-stats>span { display:flex; }.notification-row { flex-wrap:wrap; } }

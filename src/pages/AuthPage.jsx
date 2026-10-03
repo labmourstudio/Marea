@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { Navigate, useNavigate } from 'react-router-dom'
+import { Navigate, useLocation, useNavigate } from 'react-router-dom'
 import Brand from '../components/Brand'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
+import { pendingInvite } from '../lib/pendingInvite'
 import { supabase } from '../lib/supabase'
 
 export default function AuthPage() {
@@ -16,7 +17,10 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const navigate = useNavigate()
-  const afterLogin = '/feed'
+  const location = useLocation()
+  const source = location.state?.from
+  const returnTo = source?.pathname ? `${source.pathname}${source.search || ''}` : null
+  const afterLogin = pendingInvite() || (returnTo?.startsWith('/') && !returnTo.startsWith('//') && !['/login','/auth/callback'].includes(source?.pathname) ? returnTo : '/feed')
 
   if (!loading && session) return <Navigate to={profile?.onboarding_completed ? afterLogin : '/onboarding'} replace />
 
@@ -53,8 +57,8 @@ export default function AuthPage() {
         {mode === 'login' && <div className="form-row"><span /><button type="button" className="text-button" onClick={forgotPassword}>{vi ? 'Quên mật khẩu?' : 'Forgot password?'}</button></div>}
         <button className="primary-button full" disabled={busy}>{busy ? vi ? 'Đang xử lý…' : 'Working…' : mode === 'login' ? vi ? 'Đăng nhập' : 'Sign in' : vi ? 'Đăng ký' : 'Sign up'}</button>
       </form>}
-      {configured && import.meta.env.VITE_ENABLE_GOOGLE_OAUTH === 'true' && <button className="social-button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google' })}><span className="google-g">G</span>{vi ? 'Tiếp tục với Google' : 'Continue with Google'}</button>}
-      {configured && import.meta.env.VITE_ENABLE_APPLE_OAUTH === 'true' && <button className="social-button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'apple' })}><span className="apple-logo">●</span>{vi ? 'Tiếp tục với Apple' : 'Continue with Apple'}</button>}
+      {configured && import.meta.env.VITE_ENABLE_GOOGLE_OAUTH === 'true' && <button className="social-button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'google', options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}auth/callback` } })}><span className="google-g">G</span>{vi ? 'Tiếp tục với Google' : 'Continue with Google'}</button>}
+      {configured && import.meta.env.VITE_ENABLE_APPLE_OAUTH === 'true' && <button className="social-button" onClick={() => supabase.auth.signInWithOAuth({ provider: 'apple', options: { redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}auth/callback` } })}><span className="apple-logo">●</span>{vi ? 'Tiếp tục với Apple' : 'Continue with Apple'}</button>}
       {error && <p className="form-message error">{error}</p>}{message && <p className="form-message success">{message}</p>}
       <p className="auth-switch">{mode === 'login' ? vi ? 'Chưa có tài khoản?' : 'New here?' : vi ? 'Đã có tài khoản?' : 'Already have an account?'} <button onClick={() => { setMode(mode === 'login' ? 'register' : 'login'); setError(''); setMessage('') }}>{mode === 'login' ? vi ? 'Đăng ký' : 'Sign up' : vi ? 'Đăng nhập' : 'Sign in'}</button></p>
       <p className="auth-credit">Mora · Mour Studio</p>

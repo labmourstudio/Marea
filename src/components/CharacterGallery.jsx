@@ -13,7 +13,7 @@ const gameFields = [
   ['relationships', 'Mối quan hệ'], ['backstory', 'Câu chuyện'], ['extra', 'Ghi chú thêm'],
 ]
 
-export default function CharacterGallery({ projectType, nodes, links, view, selectedId, onView, onSelect, onAdd, onChange, onRemoveNode, onUploadAvatar, onUploadFlashart, imageUrl, readOnly = false }) {
+export default function CharacterGallery({ projectType, nodes, links, view, selectedId, onView, onSelect, onAdd, onChange, onRemoveNode, onUploadAvatar, onUploadFlashart, imageUrl, flashartUrl, readOnly = false }) {
   const game = isGameProject(projectType)
   const characters = nodes.filter((node) => node.canvas_kind === 'character')
   const current = characters.find((node) => node.id === selectedId)
@@ -25,7 +25,7 @@ export default function CharacterGallery({ projectType, nodes, links, view, sele
   if (view === 'canvas') return <div className="character-gallery"><header className="character-gallery-heading"><div><span className="eyebrow purple">SƠ ĐỒ QUAN HỆ</span><h2>{game ? 'Kết nối các tướng' : 'Mối quan hệ nhân vật'}</h2><p>Kéo các vòng tròn, bấm dấu + để nối và ghi tên quan hệ.</p></div><button className="secondary-button" type="button" onClick={() => onView('cards')}>← Danh sách {game ? 'tướng' : 'nhân vật'}</button></header><ProjectCanvas kind="character" projectType={projectType} nodes={nodes} links={links} onChange={onChange} onRemoveNode={onRemoveNode} onUpload={onUploadAvatar} imageUrl={imageUrl} readOnly={readOnly} /></div>
 
   if (view === 'detail' && current) {
-    const art = current.details?.flashart_data || imageUrl(current)
+    const art = flashartUrl?.(current) || current.details?.flashart_data || imageUrl(current)
     return <div className="character-gallery character-detail"><div className="character-detail-nav"><button type="button" onClick={() => onView('cards')}><ArrowLeft size={16} /> Danh sách {game ? 'tướng' : 'nhân vật'}</button><span>{currentIndex + 1} / {characters.length}</span></div>
       <div className="character-feature">
         <div className="character-feature-copy"><span>{game ? 'HỒ SƠ TƯỚNG' : 'HỒ SƠ NHÂN VẬT'}</span><h2>{current.title}</h2><p>{current.details?.quote || (game ? current.details?.role : current.details?.backstory) || 'Thêm lời giới thiệu cho nhân vật này.'}</p><div className="character-feature-tags">{[current.details?.role, current.details?.faction || current.details?.home, current.details?.position].filter(Boolean).map((value) => <span key={value}>{value}</span>)}</div></div>

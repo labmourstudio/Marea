@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { ArrowRight, BookOpen, Bookmark, BriefcaseBusiness, ChevronLeft, ChevronRight, Clapperboard, Clock3, Dices, Film, Flame, Gamepad2, HeartHandshake, Palette, Search, Sparkles, UsersRound } from 'lucide-react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { publicStorageUrl, supabase } from '../lib/supabase'
 import { readSavedProjectGroups, toggleSavedProjectGroup } from '../lib/savedProjectGroups'
+import { loadPublicProjects } from '../lib/publicProjects'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateView'
 
 const categories = [
@@ -54,6 +55,7 @@ function ProjectPoster({ project, rank, saved, onSave }) {
 
 export default function ProjectDiscoveryPage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
   const stripRef = useRef(null)
   const [projects, setProjects] = useState(null)
   const [friendIds, setFriendIds] = useState(new Set())
@@ -69,31 +71,26 @@ export default function ProjectDiscoveryPage() {
   useEffect(() => {
     let active = true
     async function load() {
-      const { data, error: projectsError } = await supabase.from('projects')
-        .select('id,name,summary,genre,project_type,stage,cover_path,looking_for,published_at,created_at,owner_id,owner:profiles!projects_owner_id_fkey(id,username,display_name)')
-        .eq('status', 'published').in('visibility', ['public', 'showcase'])
-        .order('published_at', { ascending: false }).limit(100)
+      const publicProjects = await loadPublicProjects()
       if (!active) return
-      if (projectsError) { setError(projectsError.message); setProjects([]); return }
-      const publicProjects = data || []
       setProjects(publicProjects)
       const ids = publicProjects.map((item) => item.id)
       const owners = [...new Set(publicProjects.map((item) => item.owner_id))]
       const [friends, following, posts, follows] = await Promise.all([
-        supabase.from('friendships').select('requester_id,addressee_id').eq('status', 'accepted').or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`),
-        supabase.from('follows').select('following_id').eq('follower_id', user.id),
+        user ? supabase.from('friendships').select('requester_id,addressee_id').eq('status', 'accepted').or(`requester_id.eq.${user?.id},addressee_id.eq.${user?.id}`) : Promise.resolve({ data:[] }),
+        user ? supabase.from('follows').select('following_id').eq('follower_id', user?.id) : Promise.resolve({ data:[] }),
         ids.length ? supabase.from('posts').select('project_id').in('project_id', ids).eq('status', 'published').in('visibility', ['public', 'showcase']).limit(5000) : Promise.resolve({ data: [] }),
         owners.length ? supabase.from('follows').select('following_id').in('following_id', owners).limit(5000) : Promise.resolve({ data: [] }),
       ])
       if (!active) return
-      if (!friends.error) setFriendIds(new Set((friends.data || []).map((row) => row.requester_id === user.id ? row.addressee_id : row.requester_id)))
+      if (!friends.error) setFriendIds(new Set((friends.data || []).map((row) => row.requester_id === user?.id ? row.addressee_id : row.requester_id)))
       if (!following.error) setFollowedIds(new Set((following.data || []).map((row) => row.following_id)))
       if (!posts.error) setActivity(countBy(posts.data, 'project_id'))
       if (!follows.error) setFollowers(countBy(follows.data, 'following_id'))
     }
     load().catch((caught) => { if (active) { setError(caught.message); setProjects([]) } })
     return () => { active = false }
-  }, [user.id])
+  }, [user?.id])
 
   const filtered = useMemo(() => {
     const search = query.trim().toLocaleLowerCase()
@@ -110,8 +107,8 @@ export default function ProjectDiscoveryPage() {
   const featured = useMemo(() => [...(projects || [])].filter((item) => categoryMatches(item, category) && activity[item.id] > 0)
     .sort((a, b) => (activity[b.id] || 0) - (activity[a.id] || 0) || byRecent(a, b)).slice(0, 6), [projects, category, activity])
   const rankings = Object.fromEntries(featured.map((item, index) => [item.id, index + 1]))
-  const savedIds = useMemo(() => readSavedProjectGroups(user.id), [user.id, savedVersion])
-  const toggleSave = (projectId) => { try { toggleSavedProjectGroup(user.id, projectId); setSavedVersion((version) => version + 1) } catch { setError('Không lưu được trên thiết bị này.') } }
+  const savedIds = useMemo(() => readSavedProjectGroups(user?.id), [user?.id, savedVersion])
+  const toggleSave = (projectId) => { if (!user) { navigate('/login'); return } try { toggleSavedProjectGroup(user?.id, projectId); setSavedVersion((version) => version + 1) } catch { setError('Không lưu được trên thiết bị này.') } }
   const poster = (project, rank) => <ProjectPoster key={project.id} project={project} rank={rank} saved={savedIds.includes(project.id)} onSave={toggleSave} />
 
   return <div className="content-page discovery-page">

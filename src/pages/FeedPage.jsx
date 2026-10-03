@@ -5,7 +5,10 @@ import { EmptyState, ErrorState, LoadingState } from '../components/StateView'
 import { useAuth } from '../context/AuthContext'
 import { useLanguage } from '../context/LanguageContext'
 import { publicStorageUrl, supabase } from '../lib/supabase'
-import { FeaturedPosts } from '../components/CommunityPreview'
+import { readBookmarks, toggleBookmark } from '../lib/bookmarks'
+import { validateImage } from '../lib/mediaValidation'
+import { attachPublicProjects, loadPublicProjects } from '../lib/publicProjects'
+import { useBackend } from '../context/BackendContext'
 
 const topics = [
   ['worldbuilding','Worldbuilding'], ['character-design','Character design'],
@@ -36,21 +39,25 @@ export function PostCard({ post, onRefresh, poll = null }) {
   const [comment, setComment] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  const [saved, setSaved] = useState(() => { try { return JSON.parse(localStorage.getItem('mora-saved-posts') || '[]').includes(post.id) } catch { return false } })
-  const liked = post.reactions?.some((item) => item.user_id === user.id && item.kind === 'like')
+  const [saved, setSaved] = useState(() => readBookmarks(user?.id).includes(post.id))
+  const [editing, setEditing] = useState(false)
+  const [edited, setEdited] = useState(post.content)
+  const liked = post.reactions?.some((item) => item.user_id === user?.id && item.kind === 'like')
   async function like() {
-    setBusy(true)
-    const existing = post.reactions?.find((item) => item.user_id === user.id && item.kind === 'like')
+    if (!user) return
+    setBusy(true); setError('')
+    const existing = post.reactions?.find((item) => item.user_id === user?.id && item.kind === 'like')
     const result = existing ? await supabase.from('reactions').delete().eq('id', existing.id) : await supabase.from('reactions').insert({ user_id:user.id, post_id:post.id, kind:'like' })
     setBusy(false); if (result.error) setError(result.error.message); else onRefresh()
   }
   async function submitComment(event) {
-    event.preventDefault(); if (!comment.trim()) return
+    event.preventDefault(); if (!user || !comment.trim()) return
     setBusy(true); setError('')
     const { error: insertError } = await supabase.from('comments').insert({ user_id:user.id, post_id:post.id, content:comment.trim() })
     setBusy(false); if (insertError) setError(insertError.message); else { setComment(''); onRefresh() }
   }
   async function vote(optionId) {
+    if (!user) return
     setBusy(true); setError('')
     const { error: voteError } = await supabase.from('post_poll_votes').upsert({ post_id:post.id, user_id:user.id, option_id:optionId }, { onConflict:'post_id,user_id' })
     setBusy(false); if (voteError) setError(voteError.message); else onRefresh()
@@ -60,28 +67,49 @@ export function PostCard({ post, onRefresh, poll = null }) {
     try { if (navigator.share) await navigator.share({ url }); else { await navigator.clipboard.writeText(url); setError('Link copied · Đã sao chép liên kết.') } } catch { /* Canceling the share sheet is not an error. */ }
   }
   function save() {
-    let existing = []; try { existing = JSON.parse(localStorage.getItem('mora-saved-posts') || '[]') } catch { /* Corrupt local bookmark list. */ }
-    const values = new Set(existing)
-    if (saved) values.delete(post.id); else values.add(post.id)
-    localStorage.setItem('mora-saved-posts', JSON.stringify([...values]))
-    setSaved(!saved)
+    try { setSaved(toggleBookmark(user?.id,post.id).includes(post.id)) }
+    catch (caught) { setError(caught.message) }
   }
-  return <article id={`post-${post.id}`} className="post-card glass-card"><header className="post-header"><PostAvatar person={post.author} /><div><strong>{post.author?.display_name || post.author?.username}</strong><span>@{post.author?.username} · {new Date(post.published_at || post.created_at).toLocaleDateString()}</span></div></header>
+  async function editPost() {
+    if (!edited.trim() || post.user_id !== user?.id) return
+    setBusy(true); setError('')
+    const result = await supabase.from('posts').update({ content:edited.trim() }).eq('id',post.id).eq('user_id',user.id)
+    setBusy(false)
+    if (result.error) setError(result.error.message); else { setEditing(false); onRefresh() }
+  }
+  async function deletePost() {
+    if (post.user_id !== user?.id || !window.confirm('Xóa bài đăng này cùng bình luận và lượt tương tác?')) return
+    setBusy(true)
+    const result = await supabase.from('posts').delete().eq('id',post.id).eq('user_id',user.id)
+    setBusy(false)
+    if (result.error) setError(result.error.message); else onRefresh()
+  }
+  async function reportPost() {
+    if (!user) return
+    const reason = window.prompt('Lý do báo cáo bài đăng (tối đa 500 ký tự):')
+    if (!reason?.trim()) return
+    const result = await supabase.from('reports').insert({ reporter_id:user.id,target_type:'post',target_id:post.id,reason:reason.trim().slice(0,500) })
+    setError(result.error ? result.error.message : 'Đã gửi báo cáo cho quản trị viên.')
+  }
+  return <article id={`post-${post.id}`} className="post-card glass-card"><header className="post-header"><PostAvatar person={post.author} /><div><Link to={`/u/${post.author?.username}`}><strong>{post.author?.display_name || post.author?.username || 'Người sáng tạo'}</strong></Link><span>@{post.author?.username} · {new Date(post.published_at || post.created_at).toLocaleDateString()}</span></div></header>
     {post.content_type === 'poll' && <span className="post-type"><BarChart3 size={14} /> Poll · Bình chọn</span>}
     {post.content_type === 'discussion' && <span className="post-type"><MessageCircle size={14} /> Discussion · Thảo luận</span>}
-    <p className="post-text">{post.content}</p>
+    <p className="post-text">{post.content}</p>{editing && <div className="post-edit"><textarea aria-label="Chỉnh sửa bài đăng" value={edited} maxLength={5000} onChange={(event) => setEdited(event.target.value)} /><button className="secondary-button" disabled={busy || !edited.trim()} onClick={editPost}>Lưu</button><button className="text-button" onClick={() => setEditing(false)}>Hủy</button></div>}
     <PostMedia mediaPaths={post.media_paths || []} />
     {post.project?.status === 'published' && ['public','showcase'].includes(post.project.visibility) && <Link className="linked-project" to={`/projects/${post.project.id}`}>↗ {post.project.name} · Dự án công khai</Link>}
     {!!post.hashtags?.length && <div className="post-topics">{post.hashtags.map((tag) => <Link key={tag} to={`/feed?topic=${encodeURIComponent(tag)}`}>#{topics.find(([key]) => key === tag)?.[1] || tag}</Link>)}</div>}
-    {!!poll?.options?.length && <div className="post-poll">{poll.options.map((option) => <button type="button" key={option.id} disabled={busy} className={poll.myVote === option.id ? 'selected' : ''} onClick={() => vote(option.id)}><span>{option.label}</span><small>{poll.counts?.[option.id] || 0} votes</small></button>)}</div>}
-    <footer className="post-actions"><button disabled={busy} className={liked ? 'liked' : ''} onClick={like} aria-label="Like"><Heart /> {post.reactions?.length || 0}</button><button onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}><MessageCircle /> {post.comments?.length || 0}</button><button className={saved ? 'liked' : ''} onClick={save} title="Saved only on this device"><Bookmark /></button><button onClick={share} aria-label="Share"><Share2 /></button></footer>
-    {expanded && <section className="post-comments"><h4>Discussion · Bình luận</h4>{post.comments?.map((item) => <p key={item.id}><strong>{item.author?.display_name || item.author?.username}</strong> {item.content}</p>)}<form onSubmit={submitComment}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={5000} placeholder="Write a comment / Viết bình luận" aria-label="Write a comment" /><button className="secondary-button" disabled={!comment.trim() || busy}><Send size={15} /></button></form></section>}
+    {!!poll?.options?.length && <div className="post-poll">{poll.options.map((option) => <button type="button" key={option.id} disabled={busy || !user} className={poll.myVote === option.id ? 'selected' : ''} onClick={() => vote(option.id)}><span>{option.label}</span><small>{poll.counts?.[option.id] || 0} votes</small></button>)}</div>}
+    <footer className="post-actions"><button disabled={busy || !user} className={liked ? 'liked' : ''} onClick={like} aria-label="Like"><Heart /> {post.reactions?.length || 0}</button><button onClick={() => setExpanded((value) => !value)} aria-expanded={expanded}><MessageCircle /> {post.comments?.length || 0}</button><button disabled={!user} className={saved ? 'liked' : ''} onClick={save} title="Lưu theo tài khoản trên thiết bị này"><Bookmark /></button><button onClick={share} aria-label="Share"><Share2 /></button></footer>
+    {expanded && <section className="post-comments"><h4>Discussion · Bình luận</h4>{post.comments?.map((item) => <p key={item.id}><Link to={`/u/${item.author?.username}`}><strong>{item.author?.display_name || item.author?.username || 'Người sáng tạo'}</strong></Link> {item.content}</p>)}{user ? <form onSubmit={submitComment}><input value={comment} onChange={(event) => setComment(event.target.value)} maxLength={5000} placeholder="Write a comment / Viết bình luận" aria-label="Write a comment" /><button className="secondary-button" disabled={!comment.trim() || busy}><Send size={15} /></button></form> : <Link to="/login">Đăng nhập để bình luận</Link>}</section>}
+    {user && <div className="post-management">{post.user_id === user.id ? <><button className="text-button" onClick={() => setEditing(true)}>Chỉnh sửa</button><button className="text-danger" disabled={busy} onClick={deletePost}>Xóa</button></> : <button className="text-button" onClick={reportPost}>Báo cáo</button>}</div>}
     {error && <p className="form-message error" role="status">{error}</p>}
   </article>
 }
 
 export default function FeedPage() {
   const { user, profile } = useAuth()
+  const { polls: pollsReady } = useBackend()
+  const [limit, setLimit] = useState(30)
   const { language, t } = useLanguage()
   const [searchParams, setSearchParams] = useSearchParams()
   const [content, setContent] = useState('')
@@ -98,16 +126,26 @@ export default function FeedPage() {
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
-  useEffect(() => { supabase.from('projects').select('id,name').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(100).then(({ data }) => setProjects(data || [])) }, [])
+  useEffect(() => { loadPublicProjects().then(setProjects).catch((caught) => setError(caught.message)) }, [])
   useEffect(() => { if (!file) { setPreview(''); return undefined } const url = URL.createObjectURL(file); setPreview(url); return () => URL.revokeObjectURL(url) }, [file])
   const load = useCallback(async () => {
     setLoading(true); setError('')
-    let query = supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),project:projects!posts_project_id_fkey(id,name,visibility,status),reactions(id,user_id,kind),comments(id,content,created_at,author:profiles!comments_user_id_fkey(username,display_name))').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(30)
+    let query = supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),reactions(id,user_id,kind),comments(id,content,created_at,author:profiles!comments_user_id_fkey(username,display_name))').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(limit)
     if (filter) query = query.contains('hashtags',[filter])
     const result = await query
     if (result.error) { setError(result.error.message); setLoading(false); return }
-    setPosts(result.data || [])
-    const ids = (result.data || []).filter((item) => item.content_type === 'poll').map((item) => item.id)
+    let rows = result.data || []
+    const sharedId = searchParams.get('post')
+    if (sharedId && /^[a-f0-9-]{36}$/i.test(sharedId) && !rows.some((item) => item.id === sharedId)) {
+      const shared = await supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),reactions(id,user_id,kind),comments(id,content,author:profiles!comments_user_id_fkey(username,display_name))').eq('id',sharedId).eq('status','published').in('visibility',['public','showcase']).maybeSingle()
+      if (shared.error) { setError(shared.error.message); setLoading(false); return }
+      if (shared.data) rows = [shared.data,...rows]
+      else setError('Bài đăng được chia sẻ đã ẩn, đã xóa hoặc không tồn tại.')
+    }
+    try { rows = await attachPublicProjects(rows) } catch (caught) { setError(caught.message) }
+    setPosts(rows)
+    setPolls({})
+    const ids = rows.filter((item) => item.content_type === 'poll').map((item) => item.id)
     if (ids.length) {
       const [opts, own] = await Promise.all([supabase.from('post_poll_options').select('id,post_id,label,position').in('post_id',ids).order('position'),supabase.from('post_poll_votes').select('post_id,option_id').eq('user_id',user.id).in('post_id',ids)])
       if (!opts.error && !own.error) {
@@ -116,18 +154,18 @@ export default function FeedPage() {
       }
     }
     setLoading(false)
-  }, [filter,user.id])
+  }, [filter,user.id,limit,searchParams])
   useEffect(() => { load() }, [load])
   useEffect(() => { const id = searchParams.get('post'); if (id && !loading) document.getElementById(`post-${id}`)?.scrollIntoView({ block:'center' }) }, [loading,searchParams])
 
-  function chooseFile(event) {
+  async function chooseFile(event) {
     const next = event.target.files?.[0]
     event.target.value = ''
     if (!next) return
     if (!types[next.type]) { setError('Unsupported file type. Use JPG, PNG, WebP, GIF, MP4, WebM, MP3, WAV, OGG or M4A.'); return }
     const limit = next.type.startsWith('image/') ? 8 : 40
     if (next.size > limit * 1024 * 1024) { setError(`File must be under ${limit} MB.`); return }
-    setFile(next); setKind(next.type.split('/')[0]); setError('')
+    try { if (next.type.startsWith('image/')) await validateImage(next); setFile(next); setKind(next.type.split('/')[0]); setError('') } catch (caught) { setError(caught.message) }
   }
   async function publish(event) {
     event.preventDefault(); if (!content.trim() || busy) return
@@ -136,10 +174,12 @@ export default function FeedPage() {
     setBusy(true); setError('')
     let uploaded = null; let createdId = null
     try {
-      if (kind === 'poll') { const check = await supabase.from('post_poll_options').select('id').limit(1); if (check.error) throw new Error('Polls require the pending Supabase migration before they can be published.') }
-      if (projectId) { const { data, error: projectError } = await supabase.from('projects').select('id').eq('id',projectId).eq('status','published').in('visibility',['public','showcase']).maybeSingle(); if (projectError || !data) throw new Error('The linked project is no longer public. Select another project.') }
+      if (kind === 'poll' && !pollsReady) throw new Error('Bình chọn đang chờ cập nhật Supabase.')
+      if (projectId && !(await loadPublicProjects({ id:projectId })).length) throw new Error('Dự án được liên kết không còn công khai.')
       let mediaPaths = []
       if (file) {
+        if (file.type.startsWith('image/')) await validateImage(file)
+        if (!file.type.startsWith('image/') && !pollsReady) throw new Error('Video và âm thanh đang chờ cập nhật Supabase.')
         const bucket = file.type.startsWith('image/') ? 'project-media' : 'post-media'
         const path = `${user.id}/${crypto.randomUUID()}.${types[file.type]}`
         const { error: uploadError } = await supabase.storage.from(bucket).upload(path,file,{ contentType:file.type,cacheControl:'3600' })
@@ -165,7 +205,7 @@ export default function FeedPage() {
 
   return <div className="content-page"><section className="welcome-row"><div><span className="eyebrow purple">MORA · CREATE & CONNECT</span><h1>{t.welcomeBack}, {profile?.display_name || profile?.username}</h1><p>{t.feedIntro}</p></div><Link className="secondary-button" to="/community">{language === 'vi' ? 'Khám phá nhóm Morimori' : 'Explore the Morimori group'}</Link></section>
     <div className="feed-layout"><div className="feed-main"><form className="composer glass-card new-composer" onSubmit={publish}><div className="composer-top"><PostAvatar person={profile} /><textarea value={content} onChange={(event) => setContent(event.target.value)} placeholder={t.compose} maxLength={5000} aria-label={t.compose} /></div>
-      <div className="composer-kinds"><button type="button" className={kind === 'discussion' ? 'selected' : ''} onClick={() => { setKind('discussion'); setFile(null) }}>{t.discussion}</button><button type="button" className={kind === 'poll' ? 'selected' : ''} onClick={() => { setKind('poll'); setFile(null) }}><BarChart3 size={15} /> {t.poll}</button></div>
+      <div className="composer-kinds"><button type="button" className={kind === 'discussion' ? 'selected' : ''} onClick={() => { setKind('discussion'); setFile(null) }}>{t.discussion}</button><button type="button" disabled={!pollsReady} title={pollsReady ? '' : 'Cần cập nhật Supabase'} className={kind === 'poll' ? 'selected' : ''} onClick={() => { setKind('poll'); setFile(null) }}><BarChart3 size={15} /> {t.poll}</button></div>
       {kind === 'poll' && <div className="poll-inputs">{options.map((option,index) => <input key={index} value={option} maxLength={140} onChange={(event) => setOptions((old) => old.map((item,i) => i === index ? event.target.value : item))} placeholder={`Option ${index + 1}`} aria-label={`Poll option ${index + 1}`} />)}{options.length < 8 && <button type="button" onClick={() => setOptions([...options,''])}>+ Add option</button>}</div>}
       {preview && <div className="upload-preview">{file?.type.startsWith('image/') ? <img src={preview} alt="Preview" /> : file?.type.startsWith('video/') ? <video src={preview} controls /> : <audio src={preview} controls />}<button className="secondary-button" type="button" onClick={() => { setFile(null); setKind('discussion') }}>Remove</button></div>}
       <div className="composer-context"><label>{t.topic}<select value={topic} onChange={(event) => setTopic(event.target.value)}><option value="">All topics</option>{topics.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>{t.linkedProject}<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">{t.noProject}</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div>
@@ -174,9 +214,8 @@ export default function FeedPage() {
       <p className="composer-note">{language === 'vi' ? 'Bài đăng công khai. Chỉ chọn dự án đã công bố; đăng bài không tự tạo dự án.' : 'Posts are public. You can link a published project; posting never creates a project.'}</p>
     </form>
     <div className="content-tabs topic-filters"><button className={!filter ? 'active' : ''} onClick={() => setSearchParams({})}>{t.forYou}</button>{topics.map(([key,label]) => <button key={key} className={filter === key ? 'active' : ''} onClick={() => setSearchParams({ topic:key })}>{label}</button>)}</div>
-    {!filter && <FeaturedPosts />}
     <div className="section-title community-real-heading"><h2>{language === 'vi' ? 'Bài đăng cộng đồng' : 'Community posts'}</h2></div>
-    {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />)}</div>
+    {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />)}{!loading && posts.length >= limit && <button className="secondary-button feed-more" onClick={() => setLimit((value) => value+30)}>Xem thêm bài đăng</button>}</div>
     </div>
   </div>
 }
@@ -190,8 +229,8 @@ export function ProjectActivityPage() {
   const load = useCallback(async () => {
     setLoading(true)
     const [one,linked] = await Promise.all([
-      supabase.from('projects').select('id,name,summary,owner:profiles!projects_owner_id_fkey(username,display_name)').eq('id',projectId).eq('status','published').in('visibility',['public','showcase']).maybeSingle(),
-      supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),project:projects!posts_project_id_fkey(id,name,visibility,status),reactions(id,user_id,kind),comments(id,content,author:profiles!comments_user_id_fkey(username,display_name))').eq('project_id',projectId).eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(60),
+      loadPublicProjects({ id:projectId }).then((data) => ({ data:data[0] })),
+      supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),reactions(id,user_id,kind),comments(id,content,author:profiles!comments_user_id_fkey(username,display_name))').eq('project_id',projectId).eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(60),
     ])
     if (one.error || linked.error) setError(one.error?.message || linked.error?.message)
     else { setProject(one.data); setPosts(linked.data || []) }
