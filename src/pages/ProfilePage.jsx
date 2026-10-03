@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Check, UserPlus } from 'lucide-react'
+import { useBackend } from '../context/BackendContext'
 import { useAuth } from '../context/AuthContext'
 import { EmptyState, ErrorState, LoadingState } from '../components/StateView'
 import { publicStorageUrl, supabase, uploadOwnedImage } from '../lib/supabase'
@@ -18,6 +19,7 @@ export default function ProfilePage() {
   const load = useCallback(async () => {
     setState({ loading: true, error: '', data: null })
     try {
+      if (!supabase) throw new Error('Chưa kết nối Supabase.')
       let query = supabase.from('profiles').select('id,username,display_name,bio,avatar_path,cover_path,roles,external_links,profile_visibility,account_status')
       query = username ? query.eq('username', username) : query.eq('id', user.id)
       const result = await query.maybeSingle()
@@ -76,6 +78,7 @@ export default function ProfilePage() {
 
 export function ProfileEditorPage() {
   const { user, profile, refreshProfile } = useAuth()
+  const { project_workspace: privacyReady } = useBackend()
   const [form, setForm] = useState(() => ({ display_name: profile.display_name || '', username: profile.username || '', bio: profile.bio || '', roles: (profile.roles || []).join(', '), avatar_path: profile.avatar_path, cover_path: profile.cover_path, profile_visibility: profile.profile_visibility || 'public' }))
   const [busy, setBusy] = useState(false)
   const [message, setMessage] = useState('')
@@ -90,5 +93,5 @@ export function ProfileEditorPage() {
     if (result.error) setMessage(result.error.message); else { await refreshProfile(); setMessage('Đã lưu hồ sơ.') }
     setBusy(false)
   }
-  return <div className="content-page"><Link to="/profile">← Hồ sơ</Link><form className="glass-card project-panel" onSubmit={save}><h1>Chỉnh sửa hồ sơ</h1><label>Tên hiển thị<input required maxLength={80} value={form.display_name} onChange={(e) => setForm({ ...form,display_name:e.target.value })} /></label><label>Username<input required pattern="[a-z0-9_]{3,30}" value={form.username} onChange={(e) => setForm({ ...form,username:e.target.value.toLowerCase() })} /></label><label>Giới thiệu<textarea maxLength={300} value={form.bio} onChange={(e) => setForm({ ...form,bio:e.target.value })} /></label><label>Vai trò sáng tạo, ngăn cách bằng dấu phẩy<input value={form.roles} onChange={(e) => setForm({ ...form,roles:e.target.value })} /></label><label>Ảnh đại diện<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => upload('avatar_path','avatars',e.target.files?.[0])} /></label><label>Ảnh bìa<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => upload('cover_path','covers',e.target.files?.[0])} /></label><label>Quyền xem hồ sơ<select value={form.profile_visibility} onChange={(e) => setForm({ ...form,profile_visibility:e.target.value })}><option value="public">Công khai</option><option value="private">Riêng tư</option></select></label><p className="privacy-note">Ảnh đại diện và ảnh bìa là tệp công khai. Quyền hồ sơ không tự đổi quyền của bài viết hay dự án đã công bố.</p>{message && <p role="status">{message}</p>}<button className="primary-button" disabled={busy}>Lưu hồ sơ</button></form></div>
+  return <div className="content-page"><Link to="/profile">← Hồ sơ</Link><form className="glass-card project-panel" onSubmit={save}><h1>Chỉnh sửa hồ sơ</h1><label>Tên hiển thị<input required maxLength={80} value={form.display_name} onChange={(e) => setForm({ ...form,display_name:e.target.value })} /></label><label>Username<input required pattern="[a-z0-9_]{3,30}" value={form.username} onChange={(e) => setForm({ ...form,username:e.target.value.toLowerCase() })} /></label><label>Giới thiệu<textarea maxLength={300} value={form.bio} onChange={(e) => setForm({ ...form,bio:e.target.value })} /></label><label>Vai trò sáng tạo, ngăn cách bằng dấu phẩy<input value={form.roles} onChange={(e) => setForm({ ...form,roles:e.target.value })} /></label><label>Ảnh đại diện<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => upload('avatar_path','avatars',e.target.files?.[0])} /></label><label>Ảnh bìa<input type="file" accept="image/png,image/jpeg,image/webp" disabled={busy} onChange={(e) => upload('cover_path','covers',e.target.files?.[0])} /></label><label>Quyền xem hồ sơ<select disabled={!privacyReady} value={form.profile_visibility} onChange={(e) => setForm({ ...form,profile_visibility:e.target.value })}><option value="public">Công khai</option><option value="private">Riêng tư</option></select></label><p className="privacy-note">{!privacyReady && 'Quyền riêng tư hồ sơ cần áp dụng migration bảo mật trên Supabase. '}Ảnh đại diện và ảnh bìa là tệp công khai. Quyền hồ sơ không tự đổi quyền của bài viết hay dự án đã công bố.</p>{message && <p role="status">{message}</p>}<button className="primary-button" disabled={busy}>Lưu hồ sơ</button></form></div>
 }

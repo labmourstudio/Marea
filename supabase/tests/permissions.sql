@@ -19,9 +19,9 @@ update public.profiles set username='user_'||right(id::text,1),onboarding_comple
 update public.profiles set platform_role='owner' where id='00000000-0000-4000-8000-000000000001';
 update public.profiles set platform_role='course_creator' where id='00000000-0000-4000-8000-000000000005';
 update public.profiles set platform_role='admin' where id='00000000-0000-4000-8000-000000000006';
-insert into public.projects(id,owner_id,name,description,visibility,status) values
-('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','CI project','PRIVATE_LORE','private','draft'),
-('10000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000004','CI second','OTHER_SECRET','private','draft');
+insert into public.projects(id,owner_id,name,description,visibility,status,project_type) values
+('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000001','CI project','PRIVATE_LORE','private','draft','Game'),
+('10000000-0000-4000-8000-000000000002','00000000-0000-4000-8000-000000000004','CI second','OTHER_SECRET','private','draft','Novel');
 insert into public.project_members(project_id,user_id,role) values
 ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002','editor'),
 ('10000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000003','viewer');
@@ -50,6 +50,7 @@ select test.assert((select workspace_version from public.projects where id='1000
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000001","aal":"aal1"}',true);
 select test.assert(not public.is_admin(),'Owner AAL1 is not an admin session');
 select test.denied($$select public.admin_set_user_role('00000000-0000-4000-8000-000000000004','admin')$$,'42501');
+insert into public.posts(id,user_id,content,visibility,status) values('40000000-0000-4000-8000-000000000001',auth.uid(),'Private draft','private','draft');
 insert into public.project_invitations(project_id,created_by,role) values('10000000-0000-4000-8000-000000000001',auth.uid(),'viewer');
 select set_config('test.invite',(select token from public.project_invitations limit 1),true);
 select test.assert(length(current_setting('test.invite'))=64,'invite token has correct format');
@@ -61,6 +62,7 @@ delete from public.project_members where project_id='10000000-0000-4000-8000-000
 update public.projects set status='published',visibility='showcase',public_snapshot='{"sections":[{"title":"PUBLIC_TEXT"}]}' where id='10000000-0000-4000-8000-000000000001';
 update public.profiles set profile_visibility='private' where id=auth.uid();
 set local role anon;
+select set_config('request.jwt.claims','{}',true);
 select test.assert((select count(*) from public.projects)=0,'anon cannot read base rows even for published projects');
 select test.assert((select count(*) from public.project_showcases)=1,'anon can read selected showcase');
 select test.assert((select to_jsonb(s)::text not like '%PRIVATE_LORE%' and to_jsonb(s)::text not like '%share_token%' from public.project_showcases s limit 1),'showcase never exposes private lore or token');
@@ -68,6 +70,8 @@ select test.assert((select count(*) from public.profiles where id='00000000-0000
 set local role authenticated;
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000004","aal":"aal1"}',true);
 select test.assert((select count(*) from storage.objects where bucket_id='project-drafts')=0,'revoked collaborator loses private media access');
+select test.denied($$insert into public.comments(user_id,post_id,content) values(auth.uid(),'40000000-0000-4000-8000-000000000001','Unauthorized comment')$$,'42501');
+select test.denied($$insert into public.reactions(user_id,post_id,kind) values(auth.uid(),'40000000-0000-4000-8000-000000000001','like')$$,'42501');
 insert into public.friendships(requester_id,addressee_id) values(auth.uid(),'00000000-0000-4000-8000-000000000003');
 select test.denied($$update public.friendships set status='accepted' where requester_id=auth.uid()$$,'P0001');
 select set_config('request.jwt.claims','{"sub":"00000000-0000-4000-8000-000000000003","aal":"aal1"}',true);

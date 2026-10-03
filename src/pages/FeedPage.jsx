@@ -67,7 +67,7 @@ export function PostCard({ post, onRefresh, poll = null }) {
     try { if (navigator.share) await navigator.share({ url }); else { await navigator.clipboard.writeText(url); setError('Link copied · Đã sao chép liên kết.') } } catch { /* Canceling the share sheet is not an error. */ }
   }
   function save() {
-    try { setSaved(toggleBookmark(user?.id,post.id).includes(post.id)) }
+    try { setSaved(toggleBookmark(user?.id,post.id).includes(post.id)); onRefresh() }
     catch (caught) { setError(caught.message) }
   }
   async function editPost() {
@@ -91,7 +91,7 @@ export function PostCard({ post, onRefresh, poll = null }) {
     const result = await supabase.from('reports').insert({ reporter_id:user.id,target_type:'post',target_id:post.id,reason:reason.trim().slice(0,500) })
     setError(result.error ? result.error.message : 'Đã gửi báo cáo cho quản trị viên.')
   }
-  return <article id={`post-${post.id}`} className="post-card glass-card"><header className="post-header"><PostAvatar person={post.author} /><div><Link to={`/u/${post.author?.username}`}><strong>{post.author?.display_name || post.author?.username || 'Người sáng tạo'}</strong></Link><span>@{post.author?.username} · {new Date(post.published_at || post.created_at).toLocaleDateString()}</span></div></header>
+  return <article id={`post-${post.id}`} className="post-card glass-card"><header className="post-header"><PostAvatar person={post.author} /><div><Link to={`/u/${post.author?.username}`}><strong>{post.author?.display_name || post.author?.username || 'Người sáng tạo'}</strong></Link><span>{post.author?.username ? `@${post.author.username} · ` : ''} {new Date(post.published_at || post.created_at).toLocaleDateString()}</span></div></header>
     {post.content_type === 'poll' && <span className="post-type"><BarChart3 size={14} /> Poll · Bình chọn</span>}
     {post.content_type === 'discussion' && <span className="post-type"><MessageCircle size={14} /> Discussion · Thảo luận</span>}
     <p className="post-text">{post.content}</p>{editing && <div className="post-edit"><textarea aria-label="Chỉnh sửa bài đăng" value={edited} maxLength={5000} onChange={(event) => setEdited(event.target.value)} /><button className="secondary-button" disabled={busy || !edited.trim()} onClick={editPost}>Lưu</button><button className="text-button" onClick={() => setEditing(false)}>Hủy</button></div>}
@@ -121,6 +121,7 @@ export default function FeedPage() {
   const [options, setOptions] = useState(['',''])
   const [projects, setProjects] = useState([])
   const filter = searchParams.get('topic') || ''
+  const feedTab = searchParams.get('tab') || ''
   const [posts, setPosts] = useState([])
   const [polls, setPolls] = useState({})
   const [loading, setLoading] = useState(true)
@@ -132,6 +133,17 @@ export default function FeedPage() {
     setLoading(true); setError('')
     let query = supabase.from('posts').select('*,author:profiles!posts_user_id_fkey(id,username,display_name,avatar_path),reactions(id,user_id,kind),comments(id,content,created_at,author:profiles!comments_user_id_fkey(username,display_name))').eq('status','published').in('visibility',['public','showcase']).order('published_at',{ ascending:false }).limit(limit)
     if (filter) query = query.contains('hashtags',[filter])
+    if (feedTab === 'saved') {
+      const saved = readBookmarks(user.id)
+      if (!saved.length) { setPosts([]); setLoading(false); return }
+      query = query.in('id',saved)
+    }
+    if (feedTab === 'following') {
+      const followed = await supabase.from('follows').select('following_id').eq('follower_id',user.id)
+      if (followed.error) { setError(followed.error.message); setLoading(false); return }
+      if (!followed.data.length) { setPosts([]); setLoading(false); return }
+      query = query.in('user_id',followed.data.map((item) => item.following_id))
+    }
     const result = await query
     if (result.error) { setError(result.error.message); setLoading(false); return }
     let rows = result.data || []
@@ -154,8 +166,8 @@ export default function FeedPage() {
       }
     }
     setLoading(false)
-  }, [filter,user.id,limit,searchParams])
-  useEffect(() => { load() }, [load])
+  }, [filter,feedTab,user.id,limit,searchParams])
+  useEffect(() => { load().catch((caught) => { setError(caught.message); setLoading(false) }) }, [load])
   useEffect(() => { const id = searchParams.get('post'); if (id && !loading) document.getElementById(`post-${id}`)?.scrollIntoView({ block:'center' }) }, [loading,searchParams])
 
   async function chooseFile(event) {
@@ -186,7 +198,7 @@ export default function FeedPage() {
         if (uploadError) throw new Error(bucket === 'post-media' ? `Video/audio uploads require the pending Supabase migration: ${uploadError.message}` : uploadError.message)
         uploaded = { bucket,path }; mediaPaths = [bucket === 'post-media' ? `post-media:${path}` : path]
       }
-      const { data, error: insertError } = await supabase.from('posts').insert({ user_id:user.id, content:content.trim(), content_type:kind, media_paths:mediaPaths, hashtags:topic ? [topic] : [], project_id:projectId || null, language:language === 'vi' ? 'Vietnamese' : language === 'en' ? 'English' : language, status:kind === 'poll' ? 'draft' : 'published', visibility:'public', published_at:kind === 'poll' ? null : new Date().toISOString() }).select('id').single()
+      const { data, error: insertError } = await supabase.from('posts').insert({ user_id:user.id, content:content.trim(), content_type:kind, media_paths:mediaPaths, hashtags:topic.trim() ? [topic.trim()] : [], project_id:projectId || null, language:language === 'vi' ? 'Vietnamese' : language === 'en' ? 'English' : language, status:kind === 'poll' ? 'draft' : 'published', visibility:'public', published_at:kind === 'poll' ? null : new Date().toISOString() }).select('id').single()
       if (insertError) throw insertError
       createdId = data.id
       if (kind === 'poll') {
@@ -208,14 +220,14 @@ export default function FeedPage() {
       <div className="composer-kinds"><button type="button" className={kind === 'discussion' ? 'selected' : ''} onClick={() => { setKind('discussion'); setFile(null) }}>{t.discussion}</button><button type="button" disabled={!pollsReady} title={pollsReady ? '' : 'Cần cập nhật Supabase'} className={kind === 'poll' ? 'selected' : ''} onClick={() => { setKind('poll'); setFile(null) }}><BarChart3 size={15} /> {t.poll}</button></div>
       {kind === 'poll' && <div className="poll-inputs">{options.map((option,index) => <input key={index} value={option} maxLength={140} onChange={(event) => setOptions((old) => old.map((item,i) => i === index ? event.target.value : item))} placeholder={`Option ${index + 1}`} aria-label={`Poll option ${index + 1}`} />)}{options.length < 8 && <button type="button" onClick={() => setOptions([...options,''])}>+ Add option</button>}</div>}
       {preview && <div className="upload-preview">{file?.type.startsWith('image/') ? <img src={preview} alt="Preview" /> : file?.type.startsWith('video/') ? <video src={preview} controls /> : <audio src={preview} controls />}<button className="secondary-button" type="button" onClick={() => { setFile(null); setKind('discussion') }}>Remove</button></div>}
-      <div className="composer-context"><label>{t.topic}<select value={topic} onChange={(event) => setTopic(event.target.value)}><option value="">All topics</option>{topics.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</select></label><label>{t.linkedProject}<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">{t.noProject}</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div>
+      <div className="composer-context"><label>{t.topic}<input value={topic} maxLength="80" list="mora-feed-topics" placeholder="Chọn hoặc nhập chủ đề" onChange={(event) => setTopic(event.target.value.trimStart())} /><datalist id="mora-feed-topics">{topics.map(([key,label]) => <option key={key} value={key}>{label}</option>)}</datalist></label><label>{t.linkedProject}<select value={projectId} onChange={(event) => setProjectId(event.target.value)}><option value="">{t.noProject}</option>{projects.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}</select></label></div>
       <div className="composer-actions"><div><label className="composer-upload"><ImageIcon size={16} /> {t.image}<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={chooseFile} hidden /></label><label className="composer-upload"><Video size={16} /> {t.video}<input type="file" accept="video/mp4,video/webm" onChange={chooseFile} hidden /></label><label className="composer-upload"><AudioLines size={16} /> {t.audio}<input type="file" accept="audio/mpeg,audio/wav,audio/ogg,audio/webm,audio/mp4" onChange={chooseFile} hidden /></label></div><button className="primary-button small" disabled={busy || !content.trim()}><Send size={15} /> {busy ? t.publishing : t.publish}</button></div>
       {error && <p className="form-message error" role="alert">{error}</p>}
       <p className="composer-note">{language === 'vi' ? 'Bài đăng công khai. Chỉ chọn dự án đã công bố; đăng bài không tự tạo dự án.' : 'Posts are public. You can link a published project; posting never creates a project.'}</p>
     </form>
-    <div className="content-tabs topic-filters"><button className={!filter ? 'active' : ''} onClick={() => setSearchParams({})}>{t.forYou}</button>{topics.map(([key,label]) => <button key={key} className={filter === key ? 'active' : ''} onClick={() => setSearchParams({ topic:key })}>{label}</button>)}</div>
+    <div className="content-tabs topic-filters"><button className={!filter && !feedTab ? 'active' : ''} onClick={() => setSearchParams({})}>{t.forYou}</button><button className={feedTab === 'following' ? 'active' : ''} onClick={() => { setLimit(30); setSearchParams({ tab:'following' }) }}>Following</button><button className={feedTab === 'saved' ? 'active' : ''} onClick={() => { setLimit(30); setSearchParams({ tab:'saved' }) }}>Saved</button>{topics.map(([key,label]) => <button key={key} className={filter === key ? 'active' : ''} onClick={() => setSearchParams({ topic:key })}>{label}</button>)}</div>
     <div className="section-title community-real-heading"><h2>{language === 'vi' ? 'Bài đăng cộng đồng' : 'Community posts'}</h2></div>
-    {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={load} />)}{!loading && posts.length >= limit && <button className="secondary-button feed-more" onClick={() => setLimit((value) => value+30)}>Xem thêm bài đăng</button>}</div>
+    {loading ? <LoadingState /> : error && !posts.length ? <ErrorState message={error} retry={load} /> : !posts.length ? <EmptyState title={t.feedEmpty} description={t.feedEmptyDesc} /> : posts.map((post) => <PostCard key={post.id} post={post} poll={polls[post.id]} onRefresh={() => load().catch((caught) => { setError(caught.message); setLoading(false) })} />)}{!loading && posts.length >= limit && <button className="secondary-button feed-more" onClick={() => setLimit((value) => value+30)}>Xem thêm bài đăng</button>}</div>
     </div>
   </div>
 }
@@ -237,5 +249,5 @@ export function ProjectActivityPage() {
     setLoading(false)
   },[projectId])
   useEffect(() => { load() },[load])
-  return <div className="content-page project-activity"><Link to="/projects">← Projects · Dự án</Link>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !project ? <EmptyState title="Project unavailable" description="This project is not public." /> : <><section className="glass-card settings-panel"><span className="eyebrow purple">LINKED POSTS · BÀI VIẾT LIÊN KẾT</span><h1>{project.name}</h1><p>{project.summary}</p><small>By {project.owner?.display_name || project.owner?.username}</small><p>Posts below explicitly link this public project. Private drafts and unlinked mentions never appear here.</p></section><div className="activity-posts">{posts.length ? posts.map((post) => <PostCard key={post.id} post={post} onRefresh={load} />) : <EmptyState title="No linked posts yet" description="Creators can choose this project in the Feed composer to contribute." />}</div></>}</div>
+  return <div className="content-page project-activity"><Link to="/projects">← Projects · Dự án</Link>{loading ? <LoadingState /> : error ? <ErrorState message={error} retry={load} /> : !project ? <EmptyState title="Project unavailable" description="This project is not public." /> : <><section className="glass-card settings-panel"><span className="eyebrow purple">LINKED POSTS · BÀI VIẾT LIÊN KẾT</span><h1>{project.name}</h1><p>{project.summary}</p><small>By {project.owner?.display_name || project.owner?.username}</small><p>Posts below explicitly link this public project. Private drafts and unlinked mentions never appear here.</p></section><div className="activity-posts">{posts.length ? posts.map((post) => <PostCard key={post.id} post={post} onRefresh={() => load().catch((caught) => { setError(caught.message); setLoading(false) })} />) : <EmptyState title="No linked posts yet" description="Creators can choose this project in the Feed composer to contribute." />}</div></>}</div>
 }

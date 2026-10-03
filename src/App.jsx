@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { BrowserRouter, Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom'
 import { LoadingState } from './components/StateView'
 import AppLayout from './components/AppLayout'
@@ -34,11 +34,13 @@ function ProjectEditorRoute() { const { projectId } = useParams(); return <Proje
 
 function AuthCallback() {
   const { session, profile, loading } = useAuth()
+  const [failed, setFailed] = useState(false)
+  useEffect(() => { const timer = setTimeout(() => setFailed(true),10000); return () => clearTimeout(timer) }, [])
   const navigate = useNavigate()
   useEffect(() => {
     if (!loading && session) navigate(profile?.onboarding_completed ? pendingInvite() || '/feed' : '/onboarding', { replace: true })
   }, [loading, navigate, profile, session])
-  return <div className="state-view"><p>Đang hoàn tất xác minh…</p></div>
+  return <div className="state-view"><p>{failed ? 'Chưa hoàn tất xác minh. Liên kết có thể đã hết hạn; mở lại email mới nhất hoặc đăng nhập.' : 'Đang hoàn tất xác minh…'}</p>{failed && <a className="secondary-button" href={`${import.meta.env.BASE_URL}login`}>Đăng nhập</a>}</div>
 }
 
 export default function App() {

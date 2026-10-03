@@ -128,4 +128,3 @@ export default function LocalProjectsPage() {
     {!!worlds.length && <section className="mora-screen project-archive-screen" aria-labelledby="archive-title"><div className="project-library-heading"><h2 id="archive-title">Thế giới đã tạo trước đây</h2><Link className="secondary-button" to="/studio/legacy-worlds">Xem lưu trữ cũ</Link></div><div className="project-grid">{worlds.map((world) => { const copied = projects?.some((item) => item.source_world_id === world.id); return <article className="project-card glass-card project-list-card" key={world.id}><Globe2 /><h3>{world.name}</h3><p>{world.world_type === 'game' ? 'Game' : 'Truyện'}</p><button className="secondary-button" type="button" disabled={busy || copied} onClick={() => copyWorld(world)}>{copied ? 'Đã sao chép' : 'Sao chép vào dự án'}</button></article> })}</div></section>}
   </div>
 }
-

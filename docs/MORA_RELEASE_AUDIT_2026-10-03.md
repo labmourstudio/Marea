@@ -18,8 +18,8 @@ Không thêm người dùng, bài đăng, dự án, khóa học hoặc số li�
 |---|---|---|
 | Nhận diện/giao diện | Mora chữ thông thường; kính mờ; xanh dương/tím; sáng/tối/hệ thống; nav ngang và mobile | Tận dụng bản hiện tại; thêm CSS riêng cho luồng mới, sửa avatar/thống kê hồ sơ, focus bàn phím. |
 | Đăng nhập | Email, đăng ký, xác minh, reset mật khẩu, onboarding, giữ link mời | Sửa race khi đổi tài khoản, lỗi tải hồ sơ, giữ đích sau đăng nhập và onboarding; OAuth có redirect callback. Cần cấu hình provider/redirect thực tế. |
-| Feed | Thảo luận, ảnh/video/âm thanh, bình chọn, chủ đề, link dự án công khai | Có luồng thật; bình chọn và media video/audio chỉ bật sau migration. Không tự tạo dự án từ bài viết. |
-| Tương tác | Like, bình luận, lưu/chia sẻ, sửa/xóa bài của mình, báo cáo | Bổ sung sửa/xóa/báo cáo, lưu theo tài khoản trên thiết bị, tải thêm, mở bài được chia sẻ ngoài 30 bài gần nhất. Chưa có bảng lọc Saved/Following riêng. |
+| Feed | Thảo luận, ảnh/video/âm thanh, bình chọn, chủ đề có sẵn hoặc tự nhập, link dự án công khai | Có luồng thật; bình chọn và media video/audio chỉ bật sau migration. Không tự tạo dự án từ bài viết. |
+| Tương tác | Like, bình luận, lưu/chia sẻ, sửa/xóa bài của mình, báo cáo | Bổ sung sửa/xóa/báo cáo, lưu theo tài khoản trên thiết bị, tải thêm, mở bài được chia sẻ ngoài 30 bài gần nhất. Có bộ lọc Following/Saved theo dữ liệu thật. |
 | Hồ sơ | Xem người khác, kết bạn/theo dõi, portfolio, khóa học/bài viết thật | Bổ sung `/u/:username`, chỉnh hồ sơ/avatar/cover, privacy; thẻ bạn bè/tác giả dẫn đến hồ sơ. Chưa có tùy biến layout/màu riêng hoặc danh sách follower đầy đủ. |
 | Bạn bè/nhóm | List bạn, lời mời, chỉ nhóm lưu/đã tham gia | Giữ bố cục gọn; nối nhóm riêng tư đến Studio khi backend sẵn sàng. Không liệt kê mọi nhóm. |
 | Dự án công khai | Thể loại ngang, bộ lọc, poster 3:4, trang dự án và bài liên kết | Dùng view cho phép công khai đúng trường; khách chưa đăng nhập cũng xem được. Xếp hạng hiện tính trong danh sách đã tải, không gọi là thống kê toàn nền tảng. |
@@ -81,14 +81,14 @@ Mọi script trong `supabase/tests/` là **CI-only**, không chạy trong Supaba
 - Chữ/ảnh cho người được cấp quyền xem vẫn có thể bị ghi lại. Hạn chế Copy chỉ giảm thao tác trong UI, không chống screenshot tuyệt đối.
 - Signed URL ảnh riêng tư sống tối đa 10 phút; thu hồi membership chặn cấp URL mới, URL đã ký vẫn có thể sống đến lúc hết hạn.
 - Avatar/cover và `course-media` cũ là bucket public. Profile private không biến các file này thành private. Không upload tài liệu khóa học nháp nhạy cảm vào bucket này.
-- Kiểm tra signature ở client cải thiện thao tác upload; người gọi trực tiếp Storage API có thể bỏ qua. Cần kiểm tra lại trên server/worker nếu mở upload rộng rãi.
+- Kiểm tra signature ở client cải thiện thao tác upload; người gọi trực tiếp Storage API có thể bỏ qua. Cần kiểm tra lại trên server/worker nếu mở upload rộng rãi. Quyền xuất/copy trong UI không thể ngăn người đã được phép đọc dữ liệu tự lưu dữ liệu ấy.
 - Cần log mọi thay đổi Admin, rà RPC/permission sau migration, định kỳ sao lưu và diễn tập restore. CI không mô phỏng hết Supabase JWT/Auth/Storage service.
 
 ## Ưu tiên tiếp theo trước khi mở cộng đồng rộng
 
 **P0 — vận hành:** áp dụng/kiểm chứng SQL thật; test hai tài khoản; quản lý report và block; hạn mức/rate limit chống spam, CAPTCHA đăng ký; quy trình cấp/khôi phục MFA; backup/restore; xác minh quyền phần mềm/tài sản người dùng đăng.
 
-**P1 — sản phẩm:** liên kết thư viện game theo quyền giữa các dự án; realtime/version history; tìm kiếm dự án/bài/khóa đầy đủ; Following/Saved Feed và chủ đề tùy ý; editor khóa upload riêng tư; upload nhiều media; tin nhắn trực tiếp; PDF dài không cắt; quản lý các file mồ côi/Storage quota.
+**P1 — sản phẩm:** liên kết thư viện game theo quyền giữa các dự án; realtime/version history; tìm kiếm dự án/bài/khóa đầy đủ; editor khóa upload riêng tư; upload nhiều media; tin nhắn trực tiếp; PDF dài không cắt; quản lý các file mồ côi/Storage quota.
 
 **P2 — hoàn thiện:** bản địa hóa mọi màn hình; tối ưu CSS và lazy routes thêm; accessibility, E2E đa thiết bị; onboarding cho người xem và người làm dự án; xác minh coming soon/đã gọi vốn; xác nhận brand/domain trước công bố rộng.
 
